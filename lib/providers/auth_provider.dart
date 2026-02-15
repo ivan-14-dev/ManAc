@@ -197,6 +197,10 @@ class AuthProvider with ChangeNotifier {
         return 'Password is too weak';
       case 'user-disabled':
         return 'User account is disabled';
+      case 'API_KEY_NOT_VALID':
+        return 'API key not valid. Please check Firebase configuration.';
+      case 'api-key-not-valid':
+        return 'API key not valid. Please check Firebase configuration.';
       default:
         return 'Authentication failed: $code';
     }

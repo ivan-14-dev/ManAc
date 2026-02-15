@@ -41,44 +41,44 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',
-    appId: 'YOUR_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyBhh7fWTL9KGsJh611aug4np4h8nZX9R9w',
+    appId: '1:790040261902:web:db3f13a627e566d5a5935f',
+    messagingSenderId: '790040261902',
+    projectId: 'manac-7339f',
+    authDomain: 'manac-7339f.firebaseapp.com',
+    storageBucket: 'manac-7339f.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',
-    appId: 'YOUR_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyD-OWczs2aTIwxEIETkGGpW9KWwxTD3tsY',
+    appId: '1:790040261902:android:e1ac0562c3bd0041a5935f',
+    messagingSenderId: '790040261902',
+    projectId: 'manac-7339f',
+    storageBucket: 'manac-7339f.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',
-    appId: 'YOUR_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyD-OWczs2aTIwxEIETkGGpW9KWwxTD3tsY',
+    appId: '1:790040261902:ios:abcdef1234567890',
+    messagingSenderId: '790040261902',
+    projectId: 'manac-7339f',
+    storageBucket: 'manac-7339f.firebasestorage.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',
-    appId: 'YOUR_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyD-OWczs2aTIwxEIETkGGpW9KWwxTD3tsY',
+    appId: '1:790040261902:ios:abcdef1234567890',
+    messagingSenderId: '790040261902',
+    projectId: 'manac-7339f',
+    storageBucket: 'manac-7339f.firebasestorage.app',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',
-    appId: 'YOUR_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyD-OWczs2aTIwxEIETkGGpW9KWwxTD3tsY',
+    appId: '1:790040261902:windows:abcdef1234567890',
+    messagingSenderId: '790040261902',
+    projectId: 'manac-7339f',
+    authDomain: 'manac-7339f.firebaseapp.com',
+    storageBucket: 'manac-7339f.firebasestorage.app',
   );
 }

@@ -3,6 +3,7 @@ import '../models/equipment_checkout.dart';
 import '../models/activity.dart';
 import 'local_storage_service.dart';
 import 'sync_service.dart';
+import 'firebase_service.dart';
 
 /// Service responsible for managing equipment returns
 /// Works even if checkout was made on another device
@@ -14,13 +15,29 @@ class ReturnService {
   final _uuid = const Uuid();
 
   /// Returns equipment using checkout ID (direct return)
+  /// Works even if checkout was created on another device
   Future<EquipmentCheckout> returnByCheckoutId({
     required String checkoutId,
     required String userId,
     required String userName,
     String? notes,
   }) async {
-    final checkout = LocalStorageService.getCheckoutById(checkoutId);
+    // First try to find in local storage
+    var checkout = LocalStorageService.getCheckoutById(checkoutId);
+    
+    // If not found locally, try to fetch from Firebase
+    if (checkout == null) {
+      try {
+        checkout = await FirebaseService.getCheckoutById(checkoutId);
+        if (checkout != null) {
+          // Save to local storage for offline access
+          await LocalStorageService.addCheckout(checkout);
+        }
+      } catch (e) {
+        // Firebase not available or error, continue with null
+      }
+    }
+    
     if (checkout == null) {
       throw Exception('Checkout not found with ID: $checkoutId');
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/equipment.dart';
 import '../providers/equipment_provider.dart';
+import '../theme/app_theme.dart';
 import '../widgets/safe_image.dart';
 import 'equipment_detail_screen.dart';
 import 'add_equipment_screen.dart';
@@ -25,6 +26,7 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
   @override
   Widget build(BuildContext context) {
     final equipmentProvider = context.watch<EquipmentProvider>();
+    final isMobile = context.isMobile;
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -37,19 +39,33 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
           );
         },
         icon: const Icon(Icons.add),
-        label: const Text('Add Equipment'),
+        label: const Text('Add'),
+        backgroundColor: AppTheme.primaryOrange,
+        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          // Search and Filter Section
+          Container(
+            padding: EdgeInsets.all(context.paddingHorizontal),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: Column(
               children: [
+                // Search Field
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Search equipment...',
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: const Icon(Icons.search, color: AppTheme.primaryOrange),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear),
@@ -59,12 +75,21 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
                             },
                           )
                         : null,
+                    filled: true,
+                    fillColor: AppTheme.backgroundLight,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
                   onChanged: (value) {
                     equipmentProvider.setSearchQuery(value);
                   },
                 ),
                 const SizedBox(height: 12),
+                
+                // Category Filter
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -75,9 +100,21 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
                         child: FilterChip(
                           selected: isSelected,
                           label: Text(category),
+                          selectedColor: AppTheme.primaryOrange.withOpacity(0.2),
+                          checkmarkColor: AppTheme.primaryOrange,
+                          labelStyle: TextStyle(
+                            color: isSelected ? AppTheme.primaryOrange : Colors.grey[700],
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          ),
                           onSelected: (selected) {
                             equipmentProvider.setSelectedCategory(category);
                           },
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: isSelected ? AppTheme.primaryOrange : Colors.grey[300]!,
+                            ),
+                          ),
                         ),
                       );
                     }).toList(),
@@ -87,28 +124,37 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: EdgeInsets.symmetric(
+              horizontal: context.paddingHorizontal,
+              vertical: 16,
+            ),
             child: Row(
               children: [
-                _buildStatCard(
-                  'Total Equipment',
-                  equipmentProvider.totalEquipment.toString(),
-                  Icons.inventory,
-                  Colors.blue,
+                Expanded(
+                  child: _buildStatCard(
+                    'Total Equipment',
+                    equipmentProvider.totalEquipment.toString(),
+                    Icons.inventory_2,
+                    AppTheme.primaryBlue,
+                  ),
                 ),
                 const SizedBox(width: 12),
-                _buildStatCard(
-                  'Available',
-                  equipmentProvider.availableEquipment.toString(),
-                  Icons.check_circle,
-                  Colors.green,
+                Expanded(
+                  child: _buildStatCard(
+                    'Available',
+                    equipmentProvider.availableEquipment.toString(),
+                    Icons.check_circle,
+                    AppTheme.success,
+                  ),
                 ),
                 const SizedBox(width: 12),
-                _buildStatCard(
-                  'Checked Out',
-                  equipmentProvider.checkedOutEquipment.toString(),
-                  Icons.outbound,
-                  Colors.orange,
+                Expanded(
+                  child: _buildStatCard(
+                    'Checked Out',
+                    equipmentProvider.checkedOutEquipment.toString(),
+                    Icons.outbound,
+                    AppTheme.primaryOrange,
+                  ),
                 ),
               ],
             ),
@@ -116,30 +162,73 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
           const SizedBox(height: 16),
           Expanded(
             child: equipmentProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryOrange.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const CircularProgressIndicator(
+                            color: AppTheme.primaryOrange,
+                            strokeWidth: 3,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Loading equipment...',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                 : equipmentProvider.filteredEquipment.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.inventory_2,
-                              size: 64,
-                              color: Colors.grey[400],
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.inventory_2_outlined,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 24),
                             Text(
                               'No equipment found',
                               style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey[600],
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Add your first equipment to get started',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
                               ),
                             ),
                           ],
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.paddingHorizontal,
+                        ),
                         itemCount: equipmentProvider.filteredEquipment.length,
                         itemBuilder: (context, index) {
                           final item = equipmentProvider.filteredEquipment[index];
@@ -153,39 +242,67 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Expanded(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, color.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildEquipmentCard(BuildContext context, Equipment equipment) {
+    final isDesktop = context.isDesktop;
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -195,28 +312,50 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
             ),
           );
         },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(12),
           child: Row(
             children: [
+              // Equipment Image
               Container(
-                width: 60,
-                height: 60,
+                width: isDesktop ? 80 : 70,
+                height: isDesktop ? 80 : 70,
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    colors: equipment.isAvailable 
+                        ? [AppTheme.primaryOrange, AppTheme.primaryOrangeLight]
+                        : [AppTheme.primaryBlue, AppTheme.primaryBlueLight],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (equipment.isAvailable ? AppTheme.primaryOrange : AppTheme.primaryBlue)
+                          .withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: equipment.photoPath != null && equipment.photoPath!.isNotEmpty
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         child: SafeImage(
                           imagePath: equipment.photoPath,
                           fit: BoxFit.cover,
                         ),
                       )
-                    : const Icon(Icons.inventory_2, size: 32, color: Colors.grey),
+                    : Icon(
+                        Icons.inventory_2, 
+                        size: isDesktop ? 36 : 32, 
+                        color: Colors.white,
+                      ),
               ),
               const SizedBox(width: 16),
+              
+              // Equipment Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,24 +366,59 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      equipment.category,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        equipment.category,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.primaryBlue,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
+                        Icon(
+                          Icons.inventory,
+                          size: 14,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
                         Text(
-                          'Available: ${equipment.availableQuantity}/${equipment.totalQuantity}',
+                          '${equipment.availableQuantity}/${equipment.totalQuantity}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Status indicator
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: equipment.isAvailable ? AppTheme.success : AppTheme.warning,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          equipment.isAvailable ? 'Available' : 'Checked Out',
                           style: TextStyle(
                             fontSize: 12,
-                            color: equipment.isAvailable ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.bold,
+                            color: equipment.isAvailable ? AppTheme.success : AppTheme.warning,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -252,23 +426,19 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
                   ],
                 ),
               ),
+              
+              // Action button
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: equipment.isAvailable ? Colors.green[100] : Colors.orange[100],
-                  borderRadius: BorderRadius.circular(4),
+                  color: AppTheme.primaryOrange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  equipment.isAvailable ? 'Available' : 'Out',
-                  style: TextStyle(
-                    color: equipment.isAvailable ? Colors.green[800] : Colors.orange[800],
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: const Icon(
+                  Icons.chevron_right, 
+                  color: AppTheme.primaryOrange,
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right, color: Colors.grey),
             ],
           ),
         ),

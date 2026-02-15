@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/stock_item.dart';
 import '../models/stock_movement.dart';
 import '../models/activity.dart';
+import '../models/equipment_checkout.dart';
 
 class FirebaseService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -9,6 +10,7 @@ class FirebaseService {
   static const String _stockCollection = 'stock_items';
   static const String _movementsCollection = 'stock_movements';
   static const String _activitiesCollection = 'activities';
+  static const String _checkoutsCollection = 'equipment_checkouts';
 
   // Stock Items
   static Future<String> createStockItem(StockItem item) async {
@@ -178,6 +180,44 @@ class FirebaseService {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  // Equipment Checkouts - for cross-device returns
+  static Future<EquipmentCheckout?> getCheckoutById(String checkoutId) async {
+    try {
+      final snapshot = await _firestore
+          .collection(_checkoutsCollection)
+          .where('id', isEqualTo: checkoutId)
+          .limit(1)
+          .get();
+      
+      if (snapshot.docs.isEmpty) {
+        return null;
+      }
+      
+      final data = snapshot.docs.first.data();
+      data['firebaseId'] = snapshot.docs.first.id;
+      return EquipmentCheckout.fromMap(data);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<List<EquipmentCheckout>> getActiveCheckouts() async {
+    try {
+      final snapshot = await _firestore
+          .collection(_checkoutsCollection)
+          .where('isReturned', isEqualTo: false)
+          .get();
+      
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['firebaseId'] = doc.id;
+        return EquipmentCheckout.fromMap(data);
+      }).toList();
+    } catch (e) {
+      return [];
     }
   }
 }
