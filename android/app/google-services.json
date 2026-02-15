@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "790040261902",
+    "project_id": "manac-7339f",
+    "storage_bucket": "manac-7339f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790040261902:android:e1ac0562c3bd0041a5935f",
+        "android_client_info": {
+          "package_name": "com.example.manac"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-OWczs2aTIwxEIETkGGpW9KWwxTD3tsY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

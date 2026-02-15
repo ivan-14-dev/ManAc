@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Manac needs camera access to capture photos of equipment and CNI documents.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Manac needs photo library access to save and select equipment photos.</string>
 </dict>
 </plist>

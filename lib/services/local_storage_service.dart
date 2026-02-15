@@ -4,6 +4,9 @@ import '../models/stock_item.dart';
 import '../models/stock_movement.dart';
 import '../models/sync_queue_item.dart';
 import '../models/activity.dart';
+import '../models/equipment.dart';
+import '../models/equipment_checkout.dart';
+import '../models/daily_report.dart';
 
 class LocalStorageService {
   static late SharedPreferences _prefs;
@@ -11,6 +14,9 @@ class LocalStorageService {
   static const String _movementsBox = 'stock_movements';
   static const String _syncQueueBox = 'sync_queue';
   static const String _activitiesBox = 'activities';
+  static const String _equipmentBox = 'equipment';
+  static const String _checkoutsBox = 'equipment_checkouts';
+  static const String _dailyReportsBox = 'daily_reports';
 
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -217,6 +223,186 @@ class LocalStorageService {
     await _prefs.remove(_movementsBox);
     await _prefs.remove(_syncQueueBox);
     await _prefs.remove(_activitiesBox);
+    await _prefs.remove(_equipmentBox);
+    await _prefs.remove(_checkoutsBox);
+    await _prefs.remove(_dailyReportsBox);
     await _prefs.clear();
+  }
+
+  // ========== Equipment Methods ==========
+  
+  static Future<void> addEquipment(Equipment equipment) async {
+    final items = getAllEquipment();
+    items.add(equipment);
+    await _saveEquipment(items);
+  }
+  
+  static Future<void> updateEquipment(Equipment equipment) async {
+    final items = getAllEquipment();
+    final index = items.indexWhere((e) => e.id == equipment.id);
+    if (index >= 0) {
+      items[index] = equipment.copyWith(updatedAt: DateTime.now(), isSynced: false);
+      await _saveEquipment(items);
+    }
+  }
+  
+  static Future<void> deleteEquipment(String id) async {
+    final items = getAllEquipment();
+    items.removeWhere((e) => e.id == id);
+    await _saveEquipment(items);
+  }
+  
+  static Equipment? getEquipment(String id) {
+    try {
+      return getAllEquipment().firstWhere((e) => e.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  static List<Equipment> getAllEquipment() {
+    final jsonString = _prefs.getString(_equipmentBox);
+    if (jsonString == null || jsonString.isEmpty) return [];
+    final List<dynamic> jsonList = json.decode(jsonString);
+    return jsonList.map((e) => Equipment.fromMap(e)).toList();
+  }
+  
+  static Future<void> _saveEquipment(List<Equipment> items) async {
+    final jsonList = items.map((e) => e.toMap()).toList();
+    await _prefs.setString(_equipmentBox, json.encode(jsonList));
+  }
+  
+  static List<Equipment> searchEquipment(String query) {
+    final lowercaseQuery = query.toLowerCase();
+    return getAllEquipment()
+        .where((item) =>
+            item.name.toLowerCase().contains(lowercaseQuery) ||
+            item.category.toLowerCase().contains(lowercaseQuery) ||
+            item.serialNumber.toLowerCase().contains(lowercaseQuery) ||
+            (item.barcode?.toLowerCase().contains(lowercaseQuery) ?? false))
+        .toList();
+  }
+  
+  static List<Equipment> getAvailableEquipment() {
+    return getAllEquipment().where((e) => e.isAvailable).toList();
+  }
+  
+  static List<Equipment> getCheckedOutEquipment() {
+    return getAllEquipment().where((e) => e.status == 'checked_out').toList();
+  }
+
+  // ========== Equipment Checkout Methods ==========
+  
+  static Future<void> addCheckout(EquipmentCheckout checkout) async {
+    final checkouts = getAllCheckouts();
+    checkouts.add(checkout);
+    await _saveCheckouts(checkouts);
+  }
+  
+  static Future<void> updateCheckout(EquipmentCheckout checkout) async {
+    final checkouts = getAllCheckouts();
+    final index = checkouts.indexWhere((e) => e.id == checkout.id);
+    if (index >= 0) {
+      checkouts[index] = checkout.copyWith(isSynced: false);
+      await _saveCheckouts(checkouts);
+    }
+  }
+  
+  static List<EquipmentCheckout> getAllCheckouts() {
+    final jsonString = _prefs.getString(_checkoutsBox);
+    if (jsonString == null || jsonString.isEmpty) return [];
+    final List<dynamic> jsonList = json.decode(jsonString);
+    return jsonList.map((e) => EquipmentCheckout.fromMap(e)).toList();
+  }
+  
+  static Future<void> _saveCheckouts(List<EquipmentCheckout> checkouts) async {
+    final jsonList = checkouts.map((e) => e.toMap()).toList();
+    await _prefs.setString(_checkoutsBox, json.encode(jsonList));
+  }
+  
+  static List<EquipmentCheckout> getActiveCheckouts() {
+    return getAllCheckouts()
+        .where((e) => !e.isReturned)
+        .toList()
+      ..sort((a, b) => b.checkoutTime.compareTo(a.checkoutTime));
+  }
+  
+  static List<EquipmentCheckout> getReturnedCheckouts() {
+    return getAllCheckouts()
+        .where((e) => e.isReturned)
+        .toList()
+      ..sort((a, b) => b.checkoutTime.compareTo(a.checkoutTime));
+  }
+  
+  static EquipmentCheckout? getCheckoutById(String id) {
+    try {
+      return getAllCheckouts().firstWhere((e) => e.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  static List<EquipmentCheckout> getCheckoutsByDateRange(DateTime start, DateTime end) {
+    return getAllCheckouts()
+        .where((e) => 
+            e.checkoutTime.isAfter(start) && e.checkoutTime.isBefore(end) ||
+            e.checkoutTime.isAtSameMomentAs(start) ||
+            e.checkoutTime.isAtSameMomentAs(end))
+        .toList();
+  }
+  
+  static List<EquipmentCheckout> getCheckoutsByEquipment(String equipmentId) {
+    return getAllCheckouts()
+        .where((e) => e.equipmentId == equipmentId)
+        .toList()
+      ..sort((a, b) => b.checkoutTime.compareTo(a.checkoutTime));
+  }
+  
+  static Future<void> markCheckoutAsSynced(String id) async {
+    final checkouts = getAllCheckouts();
+    final index = checkouts.indexWhere((e) => e.id == id);
+    if (index >= 0) {
+      checkouts[index] = checkouts[index].copyWith(isSynced: true);
+      await _saveCheckouts(checkouts);
+    }
+  }
+
+  // ========== Daily Report Methods ==========
+  
+  static Future<void> addDailyReport(DailyReport report) async {
+    final reports = getAllDailyReports();
+    reports.add(report);
+    await _saveDailyReports(reports);
+  }
+  
+  static List<DailyReport> getAllDailyReports() {
+    final jsonString = _prefs.getString(_dailyReportsBox);
+    if (jsonString == null || jsonString.isEmpty) return [];
+    final List<dynamic> jsonList = json.decode(jsonString);
+    return jsonList.map((e) => DailyReport.fromMap(e)).toList();
+  }
+  
+  static Future<void> _saveDailyReports(List<DailyReport> reports) async {
+    final jsonList = reports.map((e) => e.toMap()).toList();
+    await _prefs.setString(_dailyReportsBox, json.encode(jsonList));
+  }
+  
+  static DailyReport? getDailyReportByDate(DateTime date) {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    try {
+      return getAllDailyReports().firstWhere((e) {
+        final reportDate = DateTime(e.date.year, e.date.month, e.date.day);
+        return reportDate == dateOnly;
+      });
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  static List<DailyReport> getDailyReportsByMonth(int year, int month) {
+    return getAllDailyReports()
+        .where((e) => e.date.year == year && e.date.month == month)
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
   }
 }

@@ -9,6 +9,7 @@ import 'callback_dispatcher.dart';
 import 'services/local_storage_service.dart';
 import 'services/connectivity_service.dart';
 import 'providers/stock_provider.dart';
+import 'providers/equipment_provider.dart';
 import 'providers/sync_provider.dart';
 import 'providers/auth_provider.dart';
 import 'screens/main_screen.dart';
@@ -63,6 +64,11 @@ class ManacApp extends StatelessWidget {
         // Stock Provider
         ChangeNotifierProvider(
           create: (_) => StockProvider(),
+        ),
+        
+        // Equipment Provider
+        ChangeNotifierProvider(
+          create: (_) => EquipmentProvider(),
         ),
         
         // Sync Provider

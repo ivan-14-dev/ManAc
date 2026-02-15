@@ -3,6 +3,7 @@ import '../models/stock_item.dart';
 import '../models/stock_movement.dart';
 import '../models/sync_queue_item.dart';
 import '../models/activity.dart';
+import '../models/equipment_checkout.dart';
 import 'local_storage_service.dart';
 import 'firebase_service.dart';
 
@@ -67,6 +68,9 @@ class SyncService {
       case 'activities':
         await _syncActivity(item);
         break;
+      case 'equipment_checkouts':
+        await _syncCheckout(item);
+        break;
       default:
         throw Exception('Unknown collection: ${item.collection}');
     }
@@ -105,6 +109,26 @@ class SyncService {
 
     if (item.action == 'create') {
       await FirebaseService.createActivity(activity);
+    }
+  }
+
+  // Sync equipment checkouts
+  Future<void> _syncCheckout(SyncQueueItem item) async {
+    final data = item.data;
+    final checkout = EquipmentCheckout.fromMap(data);
+
+    if (item.action == 'create') {
+      // For create, check if already exists locally
+      final existing = LocalStorageService.getCheckoutById(checkout.id);
+      if (existing == null) {
+        await LocalStorageService.addCheckout(checkout);
+      }
+      await LocalStorageService.markCheckoutAsSynced(checkout.id);
+    } else if (item.action == 'update') {
+      await LocalStorageService.updateCheckout(checkout);
+      await LocalStorageService.markCheckoutAsSynced(checkout.id);
+    } else if (item.action == 'delete') {
+      // Handle delete if needed
     }
   }
 
