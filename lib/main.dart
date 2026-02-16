@@ -1,3 +1,8 @@
+// ========================================
+// Application principale ManAc - Gestion de Stock
+// Point d'entrée de l'application Flutter
+// ========================================
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -17,24 +22,26 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 
+// Fonction principale asynchrone - point d'entrée de l'application
 void main() async {
+  // Initialiser les liaisons Flutter avant tout code async
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
+  // Initialiser Firebase avec les options de la plateforme
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Initialize local storage
+  // Initialiser le stockage local pour les données hors ligne
   await LocalStorageService.init();
   
-  // Initialize Workmanager for background sync
+  // Initialiser Workmanager pour la synchronisation en arrière-plan
   Workmanager().initialize(
     callbackDispatcher,
     isInDebugMode: false,
   );
 
-  // Start periodic sync
+  // Enregistrer une tâche périodique de synchronisation (toutes les 15 minutes)
   Workmanager().registerPeriodicTask(
     'periodic-sync',
     'syncTask',
@@ -44,9 +51,11 @@ void main() async {
     ),
   );
   
+  // Lancer l'application
   runApp(const ManacApp());
 }
 
+// Widget principal de l'application
 class ManacApp extends StatefulWidget {
   const ManacApp({super.key});
 
@@ -54,20 +63,22 @@ class ManacApp extends StatefulWidget {
   State<ManacApp> createState() => _ManacAppState();
 }
 
+// État de l'application principale
 class _ManacAppState extends State<ManacApp> {
+  // Indicateur d'initialisation terminée
   bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Delay auth check until after first frame
+    // Vérifier l'authentification après la première frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAuth();
     });
   }
 
+  // Vérifier si l'utilisateur est déjà authentifié
   void _checkAuth() {
-    // Check if user is already authenticated
     final auth = app_auth.AuthProvider();
     if (auth.isAuthenticated) {
       setState(() {
@@ -80,6 +91,7 @@ class _ManacAppState extends State<ManacApp> {
     }
   }
 
+  // Callback appelé quand l'initialisation est terminée
   void _onInitialized() {
     setState(() {
       _isInitialized = true;
@@ -88,6 +100,7 @@ class _ManacAppState extends State<ManacApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Si pas encore initialisé, afficher l'écran de démarrage
     if (!_isInitialized) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -96,29 +109,30 @@ class _ManacAppState extends State<ManacApp> {
       );
     }
 
+    // Configuration des providers (gestion d'état)
     return MultiProvider(
       providers: [
-        // Connectivity Service
+        // Service de connectivité pour surveiller la connexion internet
         ChangeNotifierProvider(
           create: (_) => ConnectivityService(connectivity: Connectivity()),
         ),
         
-        // Auth Provider
+        // Provider d'authentification pour la gestion des utilisateurs
         ChangeNotifierProvider(
           create: (_) => app_auth.AuthProvider(),
         ),
         
-        // Stock Provider
+        // Provider de stock pour la gestion de l'inventaire
         ChangeNotifierProvider(
           create: (_) => StockProvider(),
         ),
         
-        // Equipment Provider
+        // Provider d'équipements pour la gestion des équipements
         ChangeNotifierProvider(
           create: (_) => EquipmentProvider(),
         ),
         
-        // Sync Provider
+        // Provider de synchronisation pour la sync avec Firebase
         ChangeNotifierProvider(
           create: (context) => SyncProvider(
             connectivityService: context.read<ConnectivityService>(),
@@ -126,11 +140,12 @@ class _ManacAppState extends State<ManacApp> {
         ),
       ],
       child: MaterialApp(
-        title: 'Manac - Stock Management',
+        title: 'Manac - Gestion de Stock',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.light,
+        // Naviguer selon l'état d'authentification
         home: Consumer<app_auth.AuthProvider>(
           builder: (context, auth, _) {
             if (auth.isAuthenticated) {

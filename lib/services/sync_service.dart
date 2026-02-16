@@ -1,3 +1,8 @@
+// ========================================
+// Service de synchronisation
+// Gère la file d'attente des opérations à synchroniser avec Firebase
+// ========================================
+
 import 'package:uuid/uuid.dart';
 import '../models/stock_item.dart';
 import '../models/stock_movement.dart';
@@ -7,6 +12,7 @@ import '../models/equipment_checkout.dart';
 import 'local_storage_service.dart';
 import 'firebase_service.dart';
 
+// Classe de service pour la synchronisation des données
 class SyncService {
   static final SyncService _instance = SyncService._internal();
   factory SyncService() => _instance;

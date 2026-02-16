@@ -1,3 +1,9 @@
+// ========================================
+// Service de retour d'équipements
+// Gère les retours d'équipements emprunts
+// Fonctionne même si l'emprunt a été fait sur un autre appareil
+// ========================================
+
 import 'package:uuid/uuid.dart';
 import '../models/equipment_checkout.dart';
 import '../models/activity.dart';
@@ -5,8 +11,8 @@ import 'local_storage_service.dart';
 import 'sync_service.dart';
 import 'firebase_service.dart';
 
-/// Service responsible for managing equipment returns
-/// Works even if checkout was made on another device
+/// Service responsable de la gestion des retours d'équipements
+/// Fonctionne même si l'emprunt a été fait sur un autre appareil
 class ReturnService {
   static final ReturnService _instance = ReturnService._internal();
   factory ReturnService() => _instance;

@@ -39,7 +39,7 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
           );
         },
         icon: const Icon(Icons.add),
-        label: const Text('Add'),
+        label: const Text(''),
         backgroundColor: AppTheme.primaryOrange,
         foregroundColor: Colors.white,
       ),

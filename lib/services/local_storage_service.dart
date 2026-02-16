@@ -1,4 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
+// ========================================
+// Service de stockage local
+// Gère la persistence des données localement (SharedPreferences + JSON)
+// Permet le fonctionnement hors ligne de l'application
+// ========================================
+
 import 'dart:convert';
 import '../models/stock_item.dart';
 import '../models/stock_movement.dart';

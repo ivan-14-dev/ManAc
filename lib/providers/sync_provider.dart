@@ -1,9 +1,15 @@
+// ========================================
+// Provider de synchronisation
+// Gère l'état de la synchronisation et le nombre d'éléments en attente
+// ========================================
+
 import 'package:flutter/material.dart';
 import 'package:workmanager/workmanager.dart';
 import '../services/sync_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/local_storage_service.dart';
 
+// Provider de synchronisation avec ChangeNotifier
 class SyncProvider with ChangeNotifier {
   final SyncService _syncService = SyncService();
   final ConnectivityService _connectivityService;

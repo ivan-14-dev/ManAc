@@ -5,6 +5,27 @@ import 'package:intl/intl.dart';
 import '../providers/equipment_provider.dart';
 import '../models/daily_report.dart';
 import '../services/local_storage_service.dart';
+import '../services/pdf_report_service.dart';
+import 'dart:io';
+
+// Fonctions helper pour formater les dates en français
+String _formatDateFrench(DateTime date) {
+  const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  const days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  final dayName = days[date.weekday - 1];
+  final monthName = months[date.month - 1];
+  return '$dayName ${date.day} $monthName ${date.year}';
+}
+
+String _formatMonthYear(DateTime date) {
+  const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  return '${months[date.month - 1]} ${date.year}';
+}
+
+String _formatDayWeek(DateTime date) {
+  const days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  return '${days[date.weekday - 1]} ${date.day}';
+}
 
 class DailyReportScreen extends StatefulWidget {
   const DailyReportScreen({super.key});
@@ -46,7 +67,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Daily report generated successfully!'),
+            content: Text('Rapport journalier généré avec succès!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -55,7 +76,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate report: $e'),
+            content: Text('Échec de la génération du rapport: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -79,7 +100,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Daily Report',
+                    'Rapport Journalier',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   IconButton(
@@ -90,7 +111,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                DateFormat('EEEE, d MMMM yyyy', 'fr').format(report.date),
+                _formatDateFrench(report.date),
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
@@ -99,7 +120,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildReportSection('SUMMARY', [
+                      _buildReportSection('RÉSUMÉ', [
                         _buildReportRow('Total Checkouts', '${report.totalCheckouts}'),
                         _buildReportRow('Total Returns', '${report.totalReturns}'),
                         _buildReportRow('Items Checked Out', '${report.totalItemsCheckedOut}'),
@@ -110,7 +131,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                       ]),
                       const SizedBox(height: 16),
                       const Text(
-                        'DETAILED SUMMARY',
+                        'RÉSUMÉ DÉTAILLÉ',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
@@ -128,8 +149,8 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                     Navigator.pop(context);
                     _exportReport(report);
                   },
-                  icon: const Icon(Icons.share),
-                  label: const Text('EXPORT REPORT'),
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text('EXPORTER EN PDF'),
                 ),
               ),
             ],
@@ -175,11 +196,37 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
     );
   }
 
-  void _exportReport(DailyReport report) {
-    // In a real app, you would export to PDF, CSV, or share via email
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Report exported!')),
-    );
+  void _exportReport(DailyReport report) async {
+    // Générer et exporter le rapport en PDF
+    try {
+      setState(() => _isGenerating = true);
+      
+      // Générer le PDF
+      final pdfFile = await PdfReportService.generateDailyReportPdf(report);
+      
+      //Partager le PDF
+      await PdfReportService.shareReport(pdfFile, report);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Rapport exporté avec succès!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'export: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
   }
 
   List<DailyReport> _getMonthlyReports(int year, int month) {
@@ -217,7 +264,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              todayReport != null ? 'Report Generated' : 'Report Not Generated',
+                              todayReport != null ? 'Rapport généré' : 'Rapport non généré',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -270,7 +317,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
               ),
               Expanded(
                 child: Text(
-                  DateFormat('MMMM yyyy', 'fr').format(_selectedMonth),
+                  _formatMonthYear(_selectedMonth),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -315,7 +362,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                           ),
                         ),
                         Text(
-                          'Reports',
+                          'Rapports',
                           style: TextStyle(color: Colors.grey[600], fontSize: 12),
                         ),
                       ],
@@ -338,7 +385,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                           ),
                         ),
                         Text(
-                          'Checkouts',
+                          'Emprunts',
                           style: TextStyle(color: Colors.grey[600], fontSize: 12),
                         ),
                       ],
@@ -361,7 +408,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                           ),
                         ),
                         Text(
-                          'Returns',
+                          'Retours',
                           style: TextStyle(color: Colors.grey[600], fontSize: 12),
                         ),
                       ],
@@ -389,7 +436,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'No reports for ${DateFormat('MMMM yyyy', 'fr').format(_selectedMonth)}',
+                        'Aucun rapport pour ${_formatMonthYear(_selectedMonth)}',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey[600],
@@ -435,7 +482,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      DateFormat('EEEE d', 'fr').format(report.date),
+                      _formatDayWeek(report.date),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -444,9 +491,9 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        _buildBadge('${report.totalCheckouts} checkouts', Colors.orange),
+                        _buildBadge('${report.totalCheckouts} emprunts', Colors.orange),
                         const SizedBox(width: 8),
-                        _buildBadge('${report.totalReturns} returns', Colors.green),
+                        _buildBadge('${report.totalReturns} retours', Colors.green),
                       ],
                     ),
                   ],

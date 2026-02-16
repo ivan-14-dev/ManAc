@@ -7,6 +7,7 @@ class EquipmentCheckout {
   String equipmentPhotoPath;
   String borrowerName;
   String borrowerCni;
+  String borrowerEmail;  // Added for sending confirmation emails
   String cniPhotoPath;
   String destinationRoom;
   int quantity;
@@ -25,6 +26,7 @@ class EquipmentCheckout {
     required this.equipmentPhotoPath,
     required this.borrowerName,
     required this.borrowerCni,
+    this.borrowerEmail = '',  // Added
     required this.cniPhotoPath,
     required this.destinationRoom,
     required this.quantity,
@@ -45,6 +47,7 @@ class EquipmentCheckout {
       'equipmentPhotoPath': equipmentPhotoPath,
       'borrowerName': borrowerName,
       'borrowerCni': borrowerCni,
+      'borrowerEmail': borrowerEmail,
       'cniPhotoPath': cniPhotoPath,
       'destinationRoom': destinationRoom,
       'quantity': quantity,
@@ -66,6 +69,7 @@ class EquipmentCheckout {
       equipmentPhotoPath: map['equipmentPhotoPath'] ?? '',
       borrowerName: map['borrowerName'] ?? '',
       borrowerCni: map['borrowerCni'] ?? '',
+      borrowerEmail: map['borrowerEmail'] ?? '',
       cniPhotoPath: map['cniPhotoPath'] ?? '',
       destinationRoom: map['destinationRoom'] ?? '',
       quantity: map['quantity'] ?? 1,
@@ -90,6 +94,7 @@ class EquipmentCheckout {
     String? equipmentPhotoPath,
     String? borrowerName,
     String? borrowerCni,
+    String? borrowerEmail,
     String? cniPhotoPath,
     String? destinationRoom,
     int? quantity,
@@ -108,6 +113,7 @@ class EquipmentCheckout {
       equipmentPhotoPath: equipmentPhotoPath ?? this.equipmentPhotoPath,
       borrowerName: borrowerName ?? this.borrowerName,
       borrowerCni: borrowerCni ?? this.borrowerCni,
+      borrowerEmail: borrowerEmail ?? this.borrowerEmail,
       cniPhotoPath: cniPhotoPath ?? this.cniPhotoPath,
       destinationRoom: destinationRoom ?? this.destinationRoom,
       quantity: quantity ?? this.quantity,

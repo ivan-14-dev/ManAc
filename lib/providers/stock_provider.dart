@@ -1,3 +1,8 @@
+// ========================================
+// Provider de stock
+// Gère l'inventaire et les mouvements de stock
+// ========================================
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/stock_item.dart';
@@ -6,6 +11,7 @@ import '../models/activity.dart';
 import '../services/local_storage_service.dart';
 import '../services/sync_service.dart';
 
+// Provider de stock avec ChangeNotifier
 class StockProvider with ChangeNotifier {
   List<StockItem> _stockItems = [];
   List<StockItem> _filteredItems = [];

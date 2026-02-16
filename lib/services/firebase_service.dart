@@ -1,18 +1,31 @@
+// ========================================
+// Service Firebase pour la gestion Cloud Firestore
+// Permet les opérations CRUD sur les collections Firestore
+// et la synchronisation avec le stockage Firebase
+// ========================================
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/stock_item.dart';
 import '../models/stock_movement.dart';
 import '../models/activity.dart';
 import '../models/equipment_checkout.dart';
 
+// Classe de service pour les opérations Firebase
 class FirebaseService {
+  // Instance singleton de Firestore
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
+  // Noms des collections Firestore
   static const String _stockCollection = 'stock_items';
   static const String _movementsCollection = 'stock_movements';
   static const String _activitiesCollection = 'activities';
   static const String _checkoutsCollection = 'equipment_checkouts';
 
-  // Stock Items
+  // ========================================
+  // OPÉRATIONS SUR LES ARTICLES DE STOCK
+  // ========================================
+
+  // Créer un nouvel article de stock dans Firestore
   static Future<String> createStockItem(StockItem item) async {
     final docRef = await _firestore.collection(_stockCollection).add({
       'id': item.id,
@@ -31,6 +44,7 @@ class FirebaseService {
     return docRef.id;
   }
 
+  // Mettre à jour un article de stock existant
   static Future<void> updateStockItem(StockItem item) async {
     await _firestore.collection(_stockCollection).doc(item.firebaseId).update({
       'name': item.name,
@@ -46,10 +60,12 @@ class FirebaseService {
     });
   }
 
+  // Supprimer un article de stock
   static Future<void> deleteStockItem(String firebaseId) async {
     await _firestore.collection(_stockCollection).doc(firebaseId).delete();
   }
 
+  // Obtenir un flux temps réel des articles de stock (stream)
   static Stream<List<StockItem>> getStockItems() {
     return _firestore
         .collection(_stockCollection)
@@ -64,6 +80,7 @@ class FirebaseService {
     });
   }
 
+  // Récupérer les articles de stock une seule fois
   static Future<List<StockItem>> fetchStockItems() async {
     final snapshot = await _firestore.collection(_stockCollection).get();
     return snapshot.docs.map((doc) {
@@ -73,7 +90,11 @@ class FirebaseService {
     }).toList();
   }
 
-  // Stock Movements
+  // ========================================
+  // OPÉRATIONS SUR LES MOUVEMENTS DE STOCK
+  // ========================================
+
+  // Créer un nouveau mouvement de stock (entrée/sortie)
   static Future<String> createMovement(StockMovement movement) async {
     final docRef = await _firestore.collection(_movementsCollection).add({
       'id': movement.id,
@@ -90,6 +111,7 @@ class FirebaseService {
     return docRef.id;
   }
 
+  // Obtenir un flux temps réel des mouvements de stock
   static Stream<List<StockMovement>> getMovements({int limit = 50}) {
     return _firestore
         .collection(_movementsCollection)
@@ -105,6 +127,7 @@ class FirebaseService {
     });
   }
 
+  // Récupérer les mouvements de stock une seule fois
   static Future<List<StockMovement>> fetchMovements() async {
     final snapshot = await _firestore
         .collection(_movementsCollection)
@@ -117,7 +140,11 @@ class FirebaseService {
     }).toList();
   }
 
-  // Activities
+  // ========================================
+  // OPÉRATIONS SUR LES ACTIVITÉS
+  // ========================================
+
+  // Créer une nouvelle activité dans le journal
   static Future<String> createActivity(Activity activity) async {
     final docRef = await _firestore.collection(_activitiesCollection).add({
       'id': activity.id,
@@ -133,6 +160,7 @@ class FirebaseService {
     return docRef.id;
   }
 
+  // Obtenir un flux temps réel des activités
   static Stream<List<Activity>> getActivities({int limit = 100}) {
     return _firestore
         .collection(_activitiesCollection)
@@ -148,7 +176,12 @@ class FirebaseService {
     });
   }
 
-  // Batch operations for sync
+  // ========================================
+  // OPÉRATIONS PAR LOT (BATCH)
+  // ========================================
+
+  // Créer plusieurs articles en une seule opération batch
+  // Utile pour la synchronisation initiale
   static Future<void> batchCreateItems(List<StockItem> items) async {
     final batch = _firestore.batch();
     
@@ -173,7 +206,11 @@ class FirebaseService {
     await batch.commit();
   }
 
-  // Connection status
+  // ========================================
+  // VÉRIFICATION DE CONNEXION
+  // ========================================
+
+  // Vérifier si la connexion à Firebase est active
   static Future<bool> checkConnection() async {
     try {
       await _firestore.collection('connection_check').doc('test').get();
@@ -183,7 +220,11 @@ class FirebaseService {
     }
   }
 
-  // Equipment Checkouts - for cross-device returns
+  // ========================================
+  // OPÉRATIONS SUR LES EMPRUNTS D'ÉQUIPEMENTS
+  // ========================================
+
+  // Récupérer un emprunt par son ID (pour les retours cross-device)
   static Future<EquipmentCheckout?> getCheckoutById(String checkoutId) async {
     try {
       final snapshot = await _firestore
@@ -204,6 +245,7 @@ class FirebaseService {
     }
   }
 
+  // Récupérer tous les emprunts actifs (non retournés)
   static Future<List<EquipmentCheckout>> getActiveCheckouts() async {
     try {
       final snapshot = await _firestore

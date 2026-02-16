@@ -1,9 +1,16 @@
+// ========================================
+// Écran de connexion / Inscription
+// Permet aux utilisateurs de se connecter ou créer un compte
+// Utilise Firebase Authentication (email/password)
+// ========================================
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import 'main_screen.dart';
 
+// Widget d'écran de connexion avec état
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -11,14 +18,20 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+// État de l'écran de connexion
 class _LoginScreenState extends State<LoginScreen> {
+  // Clé pour valider le formulaire
   final _formKey = GlobalKey<FormState>();
+  // Contrôleurs pour les champs de texte
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  // Mode de connexion (true = login, false = inscription)
   bool _isLogin = true;
+  // Afficher/masquer le mot de passe
   bool _obscurePassword = true;
 
+  // Libérer les ressources des contrôleurs
   @override
   void dispose() {
     _emailController.dispose();
@@ -27,17 +40,22 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // Soumettre le formulaire (connexion ou inscription)
   Future<void> _submit() async {
+    // Valider le formulaire
     if (!_formKey.currentState!.validate()) return;
 
+    // Obtenir le provider d'authentification
     final authProvider = context.read<AuthProvider>();
 
     if (_isLogin) {
+      // Connexion avec email et mot de passe
       await authProvider.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
     } else {
+      // Inscription avec email, mot de passe et nom
       await authProvider.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -45,6 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
 
+    // Si authentifié, naviguer vers l'écran principal
     if (authProvider.isAuthenticated && mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainScreen()),
@@ -54,10 +73,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Écouter le provider d'authentification
     final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
       body: Container(
+        // Dégradé orange-bleu en arrière-plan
         decoration: const BoxDecoration(
           gradient: AppTheme.orangeBlueGradient,
         ),
@@ -71,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Logo
+                    // Logo de l'application
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -86,9 +107,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Title
+                    // Titre selon le mode (connexion ou inscription)
                     Text(
-                      _isLogin ? 'Welcome Back' : 'Create Account',
+                      _isLogin ? 'Bienvenue' : 'Créer un compte',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 28,
@@ -97,10 +118,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
+                    // Sous-titre
                     Text(
                       _isLogin 
-                          ? 'Sign in to continue' 
-                          : 'Sign up to get started',
+                          ? 'Connectez-vous pour continuer' 
+                          : 'Inscrivez-vous pour commencer',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
                         fontSize: 16,
@@ -109,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 40),
 
-                    // Form Card
+                    // Carte du formulaire
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
@@ -125,12 +147,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Column(
                         children: [
-                          // Name Field (only for signup)
+                          // Champ Nom (uniquement pour l'inscription)
                           if (!_isLogin) ...[
                             TextFormField(
                               controller: _nameController,
                               decoration: InputDecoration(
-                                labelText: 'Full Name',
+                                labelText: 'Nom complet',
                                 prefixIcon: const Icon(Icons.person_outline),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -138,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               validator: (value) {
                                 if (!_isLogin && (value == null || value.isEmpty)) {
-                                  return 'Please enter your name';
+                                  return 'Veuillez entrer votre nom';
                                 }
                                 return null;
                               },
@@ -146,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 16),
                           ],
 
-                          // Email Field
+                          // Champ Email
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
@@ -159,22 +181,22 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your email';
+                                return 'Veuillez entrer votre email';
                               }
                               if (!value.contains('@')) {
-                                return 'Please enter a valid email';
+                                return 'Veuillez entrer un email valide';
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 16),
 
-                          // Password Field
+                          // Champ Mot de passe
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
-                              labelText: 'Password',
+                              labelText: 'Mot de passe',
                               prefixIcon: const Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 icon: Icon(
@@ -194,17 +216,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
+                                return 'Veuillez entrer votre mot de passe';
                               }
                               if (value.length < 6) {
-                                return 'Password must be at least 6 characters';
+                                return 'Le mot de passe doit contenir au moins 6 caractères';
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 24),
 
-                          // Error Message
+                          // Message d'erreur
                           if (authProvider.error.isNotEmpty)
                             Container(
                               padding: const EdgeInsets.all(12),
@@ -227,7 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
 
-                          // Submit Button
+                          // Bouton de soumission
                           SizedBox(
                             width: double.infinity,
                             height: 50,
@@ -250,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     )
                                   : Text(
-                                      _isLogin ? 'Sign In' : 'Sign Up',
+                                      _isLogin ? 'Se connecter' : 'S\'inscrire',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -259,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           
-                          // Skip button for development
+                          // Bouton de contournement pour le développement
                           TextButton(
                             onPressed: () {
                               Navigator.of(context).pushReplacement(
@@ -267,7 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               );
                             },
                             child: Text(
-                              'Skip for now (Dev mode)',
+                              'Passer pour le moment (Mode dev)',
                               style: TextStyle(
                                 color: Colors.grey[500],
                                 fontSize: 12,
@@ -276,14 +298,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Toggle Login/Signup
+                          // Basculer entre connexion et inscription
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 _isLogin 
-                                    ? "Don't have an account? " 
-                                    : 'Already have an account? ',
+                                    ? 'Pas de compte? ' 
+                                    : 'Déjà un compte? ',
                                 style: TextStyle(color: Colors.grey[600]),
                               ),
                               TextButton(
@@ -294,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   });
                                 },
                                 child: Text(
-                                  _isLogin ? 'Sign Up' : 'Sign In',
+                                  _isLogin ? 'S\'inscrire' : 'Se connecter',
                                   style: const TextStyle(
                                     color: AppTheme.primaryOrange,
                                     fontWeight: FontWeight.bold,

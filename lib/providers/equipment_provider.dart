@@ -1,3 +1,8 @@
+// ========================================
+// Provider d'équipements
+// Gère les équipements, les emprunts et les rapports quotidiens
+// ========================================
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/equipment.dart';
@@ -7,6 +12,7 @@ import '../models/activity.dart';
 import '../services/local_storage_service.dart';
 import '../services/sync_service.dart';
 
+// Provider d'équipements avec ChangeNotifier
 class EquipmentProvider with ChangeNotifier {
   List<Equipment> _equipment = [];
   List<Equipment> _filteredEquipment = [];
@@ -175,6 +181,7 @@ class EquipmentProvider with ChangeNotifier {
     required String equipmentId,
     required String borrowerName,
     required String borrowerCni,
+    required String borrowerEmail,
     required String cniPhotoPath,
     required String destinationRoom,
     required int quantity,
@@ -199,6 +206,7 @@ class EquipmentProvider with ChangeNotifier {
       equipmentPhotoPath: equipmentPhotoPath ?? equipment.photoPath ?? '',
       borrowerName: borrowerName,
       borrowerCni: borrowerCni,
+      borrowerEmail: borrowerEmail,
       cniPhotoPath: cniPhotoPath,
       destinationRoom: destinationRoom,
       quantity: quantity,

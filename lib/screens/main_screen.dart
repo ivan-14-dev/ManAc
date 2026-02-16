@@ -1,7 +1,13 @@
+// ========================================
+// Écran principal avec navigation par onglets
+// Contient la barre de navigation inférieure et l'app bar gradient
+// ========================================
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/equipment_provider.dart';
 import '../providers/sync_provider.dart';
+import '../providers/auth_provider.dart';
 import '../services/connectivity_service.dart';
 import '../theme/app_theme.dart';
 import 'equipment_checkout_screen.dart';
@@ -10,7 +16,9 @@ import 'equipment_list_screen.dart';
 import 'daily_report_screen.dart';
 import 'sync_status_screen.dart';
 import 'settings_screen.dart';
+import 'login_screen.dart';
 
+// Écran principal avec état
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -21,41 +29,249 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
+  // Pages de l'application (sans Sync et Settings)
   final List<Widget> _pages = [
     const EquipmentListScreen(),
     const EquipmentCheckoutScreen(),
     const EquipmentReturnScreen(),
     const DailyReportScreen(),
-    const SyncStatusScreen(),
-    const SettingsScreen(),
   ];
 
+  // Titres des onglets
   final List<String> _titles = [
-    'Equipment',
-    'Checkout',
-    'Return',
-    'Reports',
-    'Sync',
-    'Settings',
+    'Équipements',
+    'Emprunt',
+    'Retour',
+    'Rapports',
   ];
 
+  // Icônes des onglets (non sélectionnées)
   final List<IconData> _icons = [
     Icons.inventory_2_outlined,
     Icons.outbound,
     Icons.assignment_return,
     Icons.assessment_outlined,
-    Icons.sync,
-    Icons.settings_outlined,
   ];
 
+  // Icônes des onglets (sélectionnées)
   final List<IconData> _selectedIcons = [
     Icons.inventory_2,
     Icons.outbound,
     Icons.assignment_return,
     Icons.assessment,
-    Icons.sync,
-    Icons.settings,
   ];
+
+  // Afficher le menu de profil
+  void _showProfileMenu() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // En-tête avec infos utilisateur
+            Consumer<AuthProvider>(
+              builder: (context, auth, child) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.orangeBlueGradient,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.person, size: 35, color: AppTheme.primaryOrange),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              auth.userName ?? 'Utilisateur',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              auth.currentUser?.email ?? '',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            
+            // Options du menu
+            _buildMenuOption(
+              icon: Icons.person_outline,
+              title: 'Mon Profil',
+              subtitle: 'Voir mes informations',
+              onTap: () {
+                Navigator.pop(context);
+                _showProfileDialog();
+              },
+            ),
+            _buildMenuOption(
+              icon: Icons.sync,
+              title: 'Synchronisation',
+              subtitle: 'État de la synchronisation',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SyncStatusScreen()),
+                );
+              },
+            ),
+            _buildMenuOption(
+              icon: Icons.settings_outlined,
+              title: 'Paramètres',
+              subtitle: 'Configurer l\'application',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              },
+            ),
+            const Divider(),
+            _buildMenuOption(
+              icon: Icons.logout,
+              title: 'Déconnexion',
+              subtitle: 'Quitter l\'application',
+              color: Colors.red,
+              onTap: () {
+                Navigator.pop(context);
+                _showLogoutDialog();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: (color ?? AppTheme.primaryOrange).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: color ?? AppTheme.primaryOrange),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+      subtitle: Text(subtitle),
+      trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
+      onTap: onTap,
+    );
+  }
+
+  void _showProfileDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Consumer<AuthProvider>(
+        builder: (context, auth, child) {
+          return AlertDialog(
+            title: const Text('Mon Profil'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircleAvatar(
+                  radius: 50,
+                  backgroundColor: AppTheme.primaryOrange,
+                  child: Icon(Icons.person, size: 50, color: Colors.white),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  auth.userName ?? 'Utilisateur',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  auth.currentUser?.email ?? 'Email non disponible',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Fermer'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Déconnexion'),
+        content: const Text('Êtes-vous sûr de vouloir vous déconnecter?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await context.read<AuthProvider>().signOut();
+              if (mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Déconnexion'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +372,7 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          connectivity.isConnected ? 'Online' : 'Offline',
+                          connectivity.isConnected ? 'En ligne' : 'Hors ligne',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.9),
                             fontSize: 12,
@@ -171,44 +387,21 @@ class _MainScreenState extends State<MainScreen> {
               
               const SizedBox(width: 8),
               
-              // Sync indicator
-              Consumer<SyncProvider>(
-                builder: (context, sync, child) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: sync.pendingSyncCount > 0 
-                          ? Colors.orange.withOpacity(0.3)
-                          : Colors.green.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (sync.pendingSyncCount > 0) ...[
-                          Badge(
-                            smallSize: 16,
-                            label: Text(
-                              '${sync.pendingSyncCount}',
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                            child: const Icon(
-                              Icons.cloud_upload,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                        ] else ...[
-                          const Icon(
-                            Icons.cloud_done,
-                            color: Colors.greenAccent,
-                            size: 18,
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                },
+              // Bouton de profil
+              GestureDetector(
+                onTap: _showProfileMenu,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
               ),
             ],
           ),

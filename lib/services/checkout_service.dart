@@ -1,11 +1,16 @@
+// ========================================
+// Service d'emprunt d'équipements
+// Gère le processus d'emprunt et assure la synchronisation
+// ========================================
+
 import 'package:uuid/uuid.dart';
 import '../models/equipment_checkout.dart';
 import '../models/activity.dart';
 import 'local_storage_service.dart';
 import 'sync_service.dart';
 
-/// Service responsible for managing equipment checkouts (borrowing)
-/// This class handles the borrowing process and ensures proper synchronization
+/// Service responsable de la gestion des emprunts d'équipements
+/// Cette classe gère le processus d'emprunt et assure la synchronisation
 class CheckoutService {
   static final CheckoutService _instance = CheckoutService._internal();
   factory CheckoutService() => _instance;

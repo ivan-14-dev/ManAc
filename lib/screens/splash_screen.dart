@@ -1,7 +1,15 @@
+// ========================================
+// Écran de démarrage (Splash Screen)
+// Affiche le logo et le nom de l'application
+// avec une animation de dégradé orange-bleu
+// ========================================
+
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
+// Widget d'écran de démarrage avec état
 class SplashScreen extends StatefulWidget {
+  // Callback appelé quand l'initialisation est terminée
   final VoidCallback onInitialized;
   
   const SplashScreen({super.key, required this.onInitialized});
@@ -10,35 +18,44 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
+// État de l'écran de démarrage
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  // Contrôleur d'animation pour gérer les animations
   late AnimationController _controller;
+  // Animation de fondu (opacity)
   late Animation<double> _fadeAnimation;
+  // Animation d'échelle (zoom)
   late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
+    // Initialiser le contrôleur d'animation (durée: 1.5 secondes)
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
     
+    // Configuration de l'animation de fondu (de 0 à 1)
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeIn),
     );
     
+    // Configuration de l'animation d'échelle (de 0.5 à 1.0)
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
     
+    // Démarrer l'animation
     _controller.forward();
     
-    // Navigate after animation
+    // Naviguer vers l'écran principal après l'animation (2.5 secondes)
     Future.delayed(const Duration(milliseconds: 2500), () {
       widget.onInitialized();
     });
   }
 
+  // Libérer les ressources du contrôleur
   @override
   void dispose() {
     _controller.dispose();
@@ -49,6 +66,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        // Dégradé orange-bleu comme arrière-plan
         decoration: const BoxDecoration(
           gradient: AppTheme.orangeBlueGradient,
         ),
@@ -63,7 +81,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo Container
+                      // Conteneur du logo avec effet de vitre
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
@@ -85,7 +103,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                       const SizedBox(height: 32),
                       
-                      // App Name
+                      // Nom de l'application
                       const Text(
                         'ManAc',
                         style: TextStyle(
@@ -104,9 +122,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                       const SizedBox(height: 8),
                       
-                      // Tagline
+                      // Sous-titre / Tagline
                       Text(
-                        'Stock Management',
+                        'Gestion de Stock',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
                           fontSize: 16,
@@ -116,7 +134,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                       const SizedBox(height: 48),
                       
-                      // Loading Indicator
+                      // Indicateur de chargement
                       SizedBox(
                         width: 40,
                         height: 40,
@@ -129,8 +147,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                       const SizedBox(height: 16),
                       
+                      // Texte de chargement
                       Text(
-                        'Loading...',
+                        'Chargement...',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.7),
                           fontSize: 14,

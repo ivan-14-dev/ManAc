@@ -1,3 +1,9 @@
+// ========================================
+// Provider d'authentification
+// Gère la connexion, inscription et déconnexion des utilisateurs
+// Utilise Firebase Authentication
+// ========================================
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
@@ -5,15 +11,21 @@ import '../models/activity.dart';
 import '../services/local_storage_service.dart';
 import '../services/sync_service.dart';
 
+// Provider d'authentification avec ChangeNotifier pour la réactivité
 class AuthProvider with ChangeNotifier {
+  // Instance Firebase Auth
   final FirebaseAuth _auth = FirebaseAuth.instance;
   
+  // Utilisateur actuellement connecté
   User? _currentUser;
   String? _userId;
   String? _userName;
+  // Indicateur de chargement
   bool _isLoading = false;
+  // Message d'erreur
   String _error = '';
 
+  // Getters pour accéder aux propriétés
   User? get currentUser => _currentUser;
   String? get userId => _userId;
   String? get userName => _userName;
@@ -21,25 +33,28 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _currentUser != null;
   String get error => _error;
 
+  // Constructeur - initialise l'écouteur d'état d'authentification
   AuthProvider() {
     _init();
   }
 
+  // Initialiser l'écouteur d'état d'authentification
   void _init() {
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
 
+  // Callback appelé quand l'état d'authentification change
   Future<void> _onAuthStateChanged(User? user) async {
     if (user != null) {
       _currentUser = user;
       _userId = user.uid;
-      _userName = user.displayName ?? 'User';
+      _userName = user.displayName ?? 'Utilisateur';
       
-      // Save user info to local storage
+      // Sauvegarder les infos utilisateur en stockage local
       await LocalStorageService.setSetting('userId', user.uid);
       await LocalStorageService.setSetting('userName', _userName);
       
-      // Add login activity
+      // Ajouter une activité de connexion
       await _addLoginActivity();
     } else {
       _currentUser = null;
@@ -49,24 +64,26 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Ajouter une activité de connexion
   Future<void> _addLoginActivity() async {
     final activity = Activity(
       id: const Uuid().v4(),
       type: 'login',
-      title: 'User Logged In',
-      description: 'User logged into the app',
+      title: 'Connexion utilisateur',
+      description: 'L\'utilisateur s\'est connecté à l\'application',
       userId: _userId,
       userName: _userName,
     );
     await LocalStorageService.addActivity(activity);
   }
 
+  // Connexion avec email et mot de passe
   Future<void> signIn({
     required String email,
     required String password,
   }) async {
     if (email.isEmpty || password.isEmpty) {
-      _error = 'Email and password are required';
+      _error = 'L\'email et le mot de passe sont requis';
       notifyListeners();
       return;
     }
@@ -85,26 +102,27 @@ class AuthProvider with ChangeNotifier {
     } on FirebaseAuthException catch (e) {
       _error = _getErrorMessage(e.code);
     } catch (e) {
-      _error = 'An error occurred: $e';
+      _error = 'Une erreur s\'est produite: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
+  // Inscription avec email, mot de passe et nom
   Future<void> signUp({
     required String email,
     required String password,
     required String name,
   }) async {
     if (email.isEmpty || password.isEmpty || name.isEmpty) {
-      _error = 'All fields are required';
+      _error = 'Tous les champs sont requis';
       notifyListeners();
       return;
     }
 
     if (password.length < 6) {
-      _error = 'Password must be at least 6 characters';
+      _error = 'Le mot de passe doit contenir au moins 6 caractères';
       notifyListeners();
       return;
     }
@@ -119,7 +137,7 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
       
-      // Update user profile with name
+      // Mettre à jour le profil utilisateur avec le nom
       await credential.user?.updateDisplayName(name);
       
       _userId = credential.user?.uid;
@@ -127,21 +145,22 @@ class AuthProvider with ChangeNotifier {
     } on FirebaseAuthException catch (e) {
       _error = _getErrorMessage(e.code);
     } catch (e) {
-      _error = 'An error occurred: $e';
+      _error = 'Une erreur s\'est produite: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
+  // Déconnexion de l'utilisateur
   Future<void> signOut() async {
-    // Add logout activity before signing out
+    // Ajouter une activité de déconnexion avant de se déconnecter
     if (_userId != null) {
       final activity = Activity(
         id: const Uuid().v4(),
         type: 'logout',
-        title: 'User Logged Out',
-        description: 'User logged out of the app',
+        title: 'Déconnexion utilisateur',
+        description: 'L\'utilisateur s\'est déconnecté de l\'application',
         userId: _userId,
         userName: _userName,
       );
@@ -159,9 +178,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Réinitialiser le mot de passe par email
   Future<void> resetPassword(String email) async {
     if (email.isEmpty) {
-      _error = 'Email is required';
+      _error = 'L\'email est requis';
       notifyListeners();
       return;
     }
@@ -172,40 +192,42 @@ class AuthProvider with ChangeNotifier {
 
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      _error = 'Password reset email sent';
+      _error = 'Email de réinitialisation du mot de passe envoyé';
     } on FirebaseAuthException catch (e) {
       _error = _getErrorMessage(e.code);
     } catch (e) {
-      _error = 'An error occurred: $e';
+      _error = 'Une erreur s\'est produite: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
+  // Convertir le code d'erreur Firebase en message français
   String _getErrorMessage(String code) {
     switch (code) {
       case 'user-not-found':
-        return 'No user found with this email';
+        return 'Aucun utilisateur trouvé avec cet email';
       case 'wrong-password':
-        return 'Wrong password';
+        return 'Mot de passe incorrect';
       case 'email-already-in-use':
-        return 'Email already in use';
+        return 'Cet email est déjà utilisé';
       case 'invalid-email':
-        return 'Invalid email';
+        return 'Email invalide';
       case 'weak-password':
-        return 'Password is too weak';
+        return 'Le mot de passe est trop faible';
       case 'user-disabled':
-        return 'User account is disabled';
+        return 'Le compte utilisateur est désactivé';
       case 'API_KEY_NOT_VALID':
-        return 'API key not valid. Please check Firebase configuration.';
+        return 'Clé API invalide. Veuillez vérifier la configuration Firebase.';
       case 'api-key-not-valid':
-        return 'API key not valid. Please check Firebase configuration.';
+        return 'Clé API invalide. Veuillez vérifier la configuration Firebase.';
       default:
-        return 'Authentication failed: $code';
+        return 'Échec de l\'authentification: $code';
     }
   }
 
+  // Effacer le message d'erreur
   void clearError() {
     _error = '';
     notifyListeners();

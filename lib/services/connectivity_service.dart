@@ -1,7 +1,13 @@
+// ========================================
+// Service de connectivité
+// Surveille l'état de la connexion internet et déclenche la synchronisation
+// ========================================
+
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'sync_service.dart';
 
+// Service de connectivité avec ChangeNotifier pour la réactivité
 class ConnectivityService with ChangeNotifier {
   final Connectivity _connectivity;
   List<ConnectivityResult> _connectionResults = [];

@@ -3,6 +3,11 @@ import 'package:intl/intl.dart';
 import '../services/local_storage_service.dart';
 import '../models/activity.dart';
 
+// Fonction helper pour formater les dates
+String _formatDateTime(DateTime date) {
+  return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+}
+
 class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key});
 
@@ -182,7 +187,7 @@ class _ActivityCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  DateFormat('yyyy-MM-dd HH:mm').format(activity.timestamp),
+                  _formatDateTime(activity.timestamp),
                   style: TextStyle(
                     color: Colors.grey[500],
                     fontSize: 12,
@@ -277,7 +282,7 @@ class _ActivityCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text('Type: ${activity.type}'),
             const SizedBox(height: 8),
-            Text('Time: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(activity.timestamp)}'),
+            Text('Time: ${_formatDateTime(activity.timestamp)}'),
             if (activity.userName != null) ...[
               const SizedBox(height: 8),
               Text('User: ${activity.userName}'),
