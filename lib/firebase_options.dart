@@ -3,17 +3,14 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
-/// Example:
-/// ```dart
-/// import 'firebase_options.dart';
-/// // ...
-/// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
-/// );
-/// ```
+/// To use environment variables, create a .env file in the project root
+/// with your Firebase configuration values (see .env.example).
+/// 
+/// If .env is not loaded, fallback values will be used.
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -40,45 +37,88 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBhh7fWTL9KGsJh611aug4np4h8nZX9R9w',
-    appId: '1:790040261902:web:db3f13a627e566d5a5935f',
-    messagingSenderId: '790040261902',
-    projectId: 'manac-7339f',
-    authDomain: 'manac-7339f.firebaseapp.com',
-    storageBucket: 'manac-7339f.firebasestorage.app',
-  );
+  static String _getEnv(String key) {
+    try {
+      if (!dotenv.isInitialized) {
+        return '';
+      }
+      return dotenv.env[key] ?? '';
+    } catch (e) {
+      return '';
+    }
+  }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyD-OWczs2aTIwxEIETkGGpW9KWwxTD3tsY',
-    appId: '1:790040261902:android:e1ac0562c3bd0041a5935f',
-    messagingSenderId: '790040261902',
-    projectId: 'manac-7339f',
-    storageBucket: 'manac-7339f.firebasestorage.app',
-  );
+  // Fallback values (original Firebase config)
+  static const String _fallbackApiKeyWeb = 'AIzaSyBhh7fWTL9KGsJh611aug4np4h8nZX9R9w';
+  static const String _fallbackApiKeyMobile = 'AIzaSyD-OWczs2aTIwxEIETkGGpW9KWwxTD3tsY';
+  static const String _fallbackProjectId = 'manac-7339f';
+  static const String _fallbackStorageBucket = 'manac-7339f.firebasestorage.app';
+  static const String _fallbackMessagingSenderId = '790040261902';
+  static const String _fallbackAppIdAndroid = '1:790040261902:android:e1ac0562c3bd0041a5935f';
+  static const String _fallbackAppIdIos = '1:790040261902:ios:abcdef1234567890';
+  static const String _fallbackAppIdWeb = '1:790040261902:web:db3f13a627e566d5a5935f';
+  static const String _fallbackAuthDomain = 'manac-7339f.firebaseapp.com';
+  // Realtime Database URL
+  static const String _fallbackDatabaseURL = 'https://manac-7339f-default-rtdb.firebaseio.com';
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD-OWczs2aTIwxEIETkGGpW9KWwxTD3tsY',
-    appId: '1:790040261902:ios:abcdef1234567890',
-    messagingSenderId: '790040261902',
-    projectId: 'manac-7339f',
-    storageBucket: 'manac-7339f.firebasestorage.app',
-  );
+  static FirebaseOptions get web {
+    final apiKey = _getEnv('FIREBASE_API_KEY_WEB');
+    return FirebaseOptions(
+      apiKey: apiKey.isNotEmpty ? apiKey : _fallbackApiKeyWeb,
+      appId: _fallbackAppIdWeb,
+      messagingSenderId: _fallbackMessagingSenderId,
+      projectId: _fallbackProjectId,
+      authDomain: _fallbackAuthDomain,
+      databaseURL: _fallbackDatabaseURL,
+      storageBucket: _fallbackStorageBucket,
+    );
+  }
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyD-OWczs2aTIwxEIETkGGpW9KWwxTD3tsY',
-    appId: '1:790040261902:ios:abcdef1234567890',
-    messagingSenderId: '790040261902',
-    projectId: 'manac-7339f',
-    storageBucket: 'manac-7339f.firebasestorage.app',
-  );
+  static FirebaseOptions get android {
+    final apiKey = _getEnv('FIREBASE_API_KEY_ANDROID');
+    return FirebaseOptions(
+      apiKey: apiKey.isNotEmpty ? apiKey : _fallbackApiKeyMobile,
+      appId: _fallbackAppIdAndroid,
+      messagingSenderId: _fallbackMessagingSenderId,
+      projectId: _fallbackProjectId,
+      databaseURL: _fallbackDatabaseURL,
+      storageBucket: _fallbackStorageBucket,
+    );
+  }
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyD-OWczs2aTIwxEIETkGGpW9KWwxTD3tsY',
-    appId: '1:790040261902:windows:abcdef1234567890',
-    messagingSenderId: '790040261902',
-    projectId: 'manac-7339f',
-    authDomain: 'manac-7339f.firebaseapp.com',
-    storageBucket: 'manac-7339f.firebasestorage.app',
-  );
+  static FirebaseOptions get ios {
+    final apiKey = _getEnv('FIREBASE_API_KEY_IOS');
+    return FirebaseOptions(
+      apiKey: apiKey.isNotEmpty ? apiKey : _fallbackApiKeyMobile,
+      appId: _fallbackAppIdIos,
+      messagingSenderId: _fallbackMessagingSenderId,
+      projectId: _fallbackProjectId,
+      databaseURL: _fallbackDatabaseURL,
+      storageBucket: _fallbackStorageBucket,
+    );
+  }
+
+  static FirebaseOptions get macos {
+    final apiKey = _getEnv('FIREBASE_API_KEY_IOS');
+    return FirebaseOptions(
+      apiKey: apiKey.isNotEmpty ? apiKey : _fallbackApiKeyMobile,
+      appId: _fallbackAppIdIos,
+      messagingSenderId: _fallbackMessagingSenderId,
+      projectId: _fallbackProjectId,
+      databaseURL: _fallbackDatabaseURL,
+      storageBucket: _fallbackStorageBucket,
+    );
+  }
+
+  static FirebaseOptions get windows {
+    return FirebaseOptions(
+      apiKey: _fallbackApiKeyMobile,
+      appId: _fallbackAppIdWeb,
+      messagingSenderId: _fallbackMessagingSenderId,
+      projectId: _fallbackProjectId,
+      authDomain: _fallbackAuthDomain,
+      databaseURL: _fallbackDatabaseURL,
+      storageBucket: _fallbackStorageBucket,
+    );
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+// Use default system fonts for offline compatibility
+// import 'package:google_fonts/google_fonts.dart';
 
 /// App Theme Configuration with vibrant orange and blue colors
 /// Modern, responsive and fluid design
@@ -54,6 +55,25 @@ class AppTheme {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+  
+  // Theme-aware solid color for login/splash screens (no gradient)
+  static Color getLoginColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (isDark) {
+      return const Color(0xFF1A237E); // Dark blue for dark mode
+    }
+    return primaryOrange; // Orange for light mode
+  }
+
+  // Legacy gradient method for compatibility
+  static LinearGradient getLoginGradient(BuildContext context) {
+    final color = getLoginColor(context);
+    return LinearGradient(
+      colors: [color, color],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+  }
 
   // Light Theme
   static ThemeData get lightTheme {
@@ -289,79 +309,79 @@ class AppTheme {
         size: 24,
       ),
       
-      // Text Theme - Using Poppins font
+      // Text Theme - Using default system font for offline compatibility
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.poppins(
+        displayLarge: TextStyle(
           fontSize: 57,
           fontWeight: FontWeight.w400,
           color: textPrimaryLight,
         ),
-        displayMedium: GoogleFonts.poppins(
+        displayMedium: TextStyle(
           fontSize: 45,
           fontWeight: FontWeight.w400,
           color: textPrimaryLight,
         ),
-        displaySmall: GoogleFonts.poppins(
+        displaySmall: TextStyle(
           fontSize: 36,
           fontWeight: FontWeight.w400,
           color: textPrimaryLight,
         ),
-        headlineLarge: GoogleFonts.poppins(
+        headlineLarge: TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.w600,
           color: textPrimaryLight,
         ),
-        headlineMedium: GoogleFonts.poppins(
+        headlineMedium: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.w600,
           color: textPrimaryLight,
         ),
-        headlineSmall: GoogleFonts.poppins(
+        headlineSmall: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w600,
           color: textPrimaryLight,
         ),
-        titleLarge: GoogleFonts.poppins(
+        titleLarge: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: textPrimaryLight,
         ),
-        titleMedium: GoogleFonts.poppins(
+        titleMedium: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: textPrimaryLight,
         ),
-        titleSmall: GoogleFonts.poppins(
+        titleSmall: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: textPrimaryLight,
         ),
-        bodyLarge: GoogleFonts.poppins(
+        bodyLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: textPrimaryLight,
         ),
-        bodyMedium: GoogleFonts.poppins(
+        bodyMedium: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: textPrimaryLight,
         ),
-        bodySmall: GoogleFonts.poppins(
+        bodySmall: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w400,
           color: textSecondaryLight,
         ),
-        labelLarge: GoogleFonts.poppins(
+        labelLarge: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: textPrimaryLight,
         ),
-        labelMedium: GoogleFonts.poppins(
+        labelMedium: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: textPrimaryLight,
         ),
-        labelSmall: GoogleFonts.poppins(
+        labelSmall: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: textSecondaryLight,
@@ -491,79 +511,79 @@ class AppTheme {
         }),
       ),
       
-      // Text Theme
+      // Text Theme - Using default system font for offline compatibility
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.poppins(
+        displayLarge: TextStyle(
           fontSize: 57,
           fontWeight: FontWeight.w400,
           color: textPrimaryDark,
         ),
-        displayMedium: GoogleFonts.poppins(
+        displayMedium: TextStyle(
           fontSize: 45,
           fontWeight: FontWeight.w400,
           color: textPrimaryDark,
         ),
-        displaySmall: GoogleFonts.poppins(
+        displaySmall: TextStyle(
           fontSize: 36,
           fontWeight: FontWeight.w400,
           color: textPrimaryDark,
         ),
-        headlineLarge: GoogleFonts.poppins(
+        headlineLarge: TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.w600,
           color: textPrimaryDark,
         ),
-        headlineMedium: GoogleFonts.poppins(
+        headlineMedium: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.w600,
           color: textPrimaryDark,
         ),
-        headlineSmall: GoogleFonts.poppins(
+        headlineSmall: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w600,
           color: textPrimaryDark,
         ),
-        titleLarge: GoogleFonts.poppins(
+        titleLarge: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: textPrimaryDark,
         ),
-        titleMedium: GoogleFonts.poppins(
+        titleMedium: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: textPrimaryDark,
         ),
-        titleSmall: GoogleFonts.poppins(
+        titleSmall: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: textPrimaryDark,
         ),
-        bodyLarge: GoogleFonts.poppins(
+        bodyLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: textPrimaryDark,
         ),
-        bodyMedium: GoogleFonts.poppins(
+        bodyMedium: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: textPrimaryDark,
         ),
-        bodySmall: GoogleFonts.poppins(
+        bodySmall: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w400,
           color: textSecondaryDark,
         ),
-        labelLarge: GoogleFonts.poppins(
+        labelLarge: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: textPrimaryDark,
         ),
-        labelMedium: GoogleFonts.poppins(
+        labelMedium: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: textPrimaryDark,
         ),
-        labelSmall: GoogleFonts.poppins(
+        labelSmall: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: textSecondaryDark,

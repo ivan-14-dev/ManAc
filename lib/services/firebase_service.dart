@@ -1,34 +1,37 @@
 // ========================================
-// Service Firebase pour la gestion Cloud Firestore
-// Permet les opérations CRUD sur les collections Firestore
+// Service Firebase pour la gestion Realtime Database
+// Permet les opérations CRUD sur la base de données temps réel
 // et la synchronisation avec le stockage Firebase
 // ========================================
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import '../models/stock_item.dart';
 import '../models/stock_movement.dart';
 import '../models/activity.dart';
 import '../models/equipment_checkout.dart';
 
-// Classe de service pour les opérations Firebase
+// Classe de service pour les opérations Firebase Realtime Database
 class FirebaseService {
-  // Instance singleton de Firestore
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // Instance singleton de Realtime Database
+  static final FirebaseDatabase _database = FirebaseDatabase.instance;
   
-  // Noms des collections Firestore
-  static const String _stockCollection = 'stock_items';
-  static const String _movementsCollection = 'stock_movements';
-  static const String _activitiesCollection = 'activities';
-  static const String _checkoutsCollection = 'equipment_checkouts';
+  // Nœuds de la base de données
+  static const String _stockNode = 'stock_items';
+  static const String _movementsNode = 'stock_movements';
+  static const String _activitiesNode = 'activities';
+  static const String _checkoutsNode = 'equipment_checkouts';
 
   // ========================================
   // OPÉRATIONS SUR LES ARTICLES DE STOCK
   // ========================================
 
-  // Créer un nouvel article de stock dans Firestore
+  // Créer un nouvel article de stock dans Realtime Database
   static Future<String> createStockItem(StockItem item) async {
-    final docRef = await _firestore.collection(_stockCollection).add({
+    final ref = _database.ref(_stockNode);
+    final newRef = ref.push();
+    await newRef.set({
       'id': item.id,
+      'firebaseId': newRef.key,
       'name': item.name,
       'category': item.category,
       'quantity': item.quantity,
@@ -38,15 +41,17 @@ class FirebaseService {
       'description': item.description,
       'barcode': item.barcode,
       'location': item.location,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'createdAt': DateTime.now().toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
     });
-    return docRef.id;
+    return newRef.key!;
   }
 
   // Mettre à jour un article de stock existant
   static Future<void> updateStockItem(StockItem item) async {
-    await _firestore.collection(_stockCollection).doc(item.firebaseId).update({
+    final firebaseId = item.firebaseId ?? item.id;
+    final ref = _database.ref(_stockNode).child(firebaseId);
+    await ref.update({
       'name': item.name,
       'category': item.category,
       'quantity': item.quantity,
@@ -56,37 +61,51 @@ class FirebaseService {
       'description': item.description,
       'barcode': item.barcode,
       'location': item.location,
-      'updatedAt': FieldValue.serverTimestamp(),
+      'updatedAt': DateTime.now().toIso8601String(),
     });
   }
 
   // Supprimer un article de stock
   static Future<void> deleteStockItem(String firebaseId) async {
-    await _firestore.collection(_stockCollection).doc(firebaseId).delete();
+    await _database.ref(_stockNode).child(firebaseId).remove();
   }
 
   // Obtenir un flux temps réel des articles de stock (stream)
   static Stream<List<StockItem>> getStockItems() {
-    return _firestore
-        .collection(_stockCollection)
-        .orderBy('name')
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['firebaseId'] = doc.id;
-        return StockItem.fromMap(data);
+    return _database
+        .ref(_stockNode)
+        .orderByChild('name')
+        .onValue
+        .map((event) {
+      final data = event.snapshot.value;
+      if (data == null) return [];
+      if (data is! Map) return [];
+      
+      final Map<dynamic, dynamic> dataMap = data;
+      return dataMap.entries.map((entry) {
+        final Map<String, dynamic> itemData = {
+          ...Map<String, dynamic>.from(entry.value),
+          'firebaseId': entry.key,
+        };
+        return StockItem.fromMap(itemData);
       }).toList();
     });
   }
 
   // Récupérer les articles de stock une seule fois
   static Future<List<StockItem>> fetchStockItems() async {
-    final snapshot = await _firestore.collection(_stockCollection).get();
-    return snapshot.docs.map((doc) {
-      final data = doc.data();
-      data['firebaseId'] = doc.id;
-      return StockItem.fromMap(data);
+    final snapshot = await _database.ref(_stockNode).get();
+    final data = snapshot.value;
+    if (data == null) return [];
+    if (data is! Map) return [];
+    
+    final Map<dynamic, dynamic> dataMap = data;
+    return dataMap.entries.map((entry) {
+      final Map<String, dynamic> itemData = {
+        ...Map<String, dynamic>.from(entry.value),
+        'firebaseId': entry.key,
+      };
+      return StockItem.fromMap(itemData);
     }).toList();
   }
 
@@ -96,8 +115,11 @@ class FirebaseService {
 
   // Créer un nouveau mouvement de stock (entrée/sortie)
   static Future<String> createMovement(StockMovement movement) async {
-    final docRef = await _firestore.collection(_movementsCollection).add({
+    final ref = _database.ref(_movementsNode);
+    final newRef = ref.push();
+    await newRef.set({
       'id': movement.id,
+      'firebaseId': newRef.key,
       'stockItemId': movement.stockItemId,
       'type': movement.type,
       'quantity': movement.quantity,
@@ -106,38 +128,57 @@ class FirebaseService {
       'date': movement.date.toIso8601String(),
       'userId': movement.userId,
       'userName': movement.userName,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': DateTime.now().toIso8601String(),
     });
-    return docRef.id;
+    return newRef.key!;
   }
 
   // Obtenir un flux temps réel des mouvements de stock
   static Stream<List<StockMovement>> getMovements({int limit = 50}) {
-    return _firestore
-        .collection(_movementsCollection)
-        .orderBy('date', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['firebaseId'] = doc.id;
-        return StockMovement.fromMap(data);
+    return _database
+        .ref(_movementsNode)
+        .orderByChild('date')
+        .limitToLast(limit)
+        .onValue
+        .map((event) {
+      final data = event.snapshot.value;
+      if (data == null) return [];
+      if (data is! Map) return [];
+      
+      final Map<dynamic, dynamic> dataMap = data;
+      final movements = dataMap.entries.map((entry) {
+        final Map<String, dynamic> itemData = {
+          ...Map<String, dynamic>.from(entry.value),
+          'firebaseId': entry.key,
+        };
+        return StockMovement.fromMap(itemData);
       }).toList();
+      
+      // Trier par date décroissant
+      movements.sort((a, b) => b.date.compareTo(a.date));
+      return movements;
     });
   }
 
   // Récupérer les mouvements de stock une seule fois
   static Future<List<StockMovement>> fetchMovements() async {
-    final snapshot = await _firestore
-        .collection(_movementsCollection)
-        .orderBy('date', descending: true)
-        .get();
-    return snapshot.docs.map((doc) {
-      final data = doc.data();
-      data['firebaseId'] = doc.id;
-      return StockMovement.fromMap(data);
+    final snapshot = await _database.ref(_movementsNode).get();
+    final data = snapshot.value;
+    if (data == null) return [];
+    if (data is! Map) return [];
+    
+    final Map<dynamic, dynamic> dataMap = data;
+    final movements = dataMap.entries.map((entry) {
+      final Map<String, dynamic> itemData = {
+        ...Map<String, dynamic>.from(entry.value),
+        'firebaseId': entry.key,
+      };
+      return StockMovement.fromMap(itemData);
     }).toList();
+    
+    // Trier par date décroissant
+    movements.sort((a, b) => b.date.compareTo(a.date));
+    return movements;
   }
 
   // ========================================
@@ -146,8 +187,11 @@ class FirebaseService {
 
   // Créer une nouvelle activité dans le journal
   static Future<String> createActivity(Activity activity) async {
-    final docRef = await _firestore.collection(_activitiesCollection).add({
+    final ref = _database.ref(_activitiesNode);
+    final newRef = ref.push();
+    await newRef.set({
       'id': activity.id,
+      'firebaseId': newRef.key,
       'type': activity.type,
       'title': activity.title,
       'description': activity.description,
@@ -155,24 +199,35 @@ class FirebaseService {
       'userId': activity.userId,
       'userName': activity.userName,
       'metadata': activity.metadata,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': DateTime.now().toIso8601String(),
     });
-    return docRef.id;
+    return newRef.key!;
   }
 
   // Obtenir un flux temps réel des activités
   static Stream<List<Activity>> getActivities({int limit = 100}) {
-    return _firestore
-        .collection(_activitiesCollection)
-        .orderBy('timestamp', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['firebaseId'] = doc.id;
-        return Activity.fromMap(data);
+    return _database
+        .ref(_activitiesNode)
+        .orderByChild('timestamp')
+        .limitToLast(limit)
+        .onValue
+        .map((event) {
+      final data = event.snapshot.value;
+      if (data == null) return [];
+      if (data is! Map) return [];
+      
+      final Map<dynamic, dynamic> dataMap = data;
+      final activities = dataMap.entries.map((entry) {
+        final Map<String, dynamic> itemData = {
+          ...Map<String, dynamic>.from(entry.value),
+          'firebaseId': entry.key,
+        };
+        return Activity.fromMap(itemData);
       }).toList();
+      
+      // Trier par timestamp décroissant
+      activities.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return activities;
     });
   }
 
@@ -183,12 +238,13 @@ class FirebaseService {
   // Créer plusieurs articles en une seule opération batch
   // Utile pour la synchronisation initiale
   static Future<void> batchCreateItems(List<StockItem> items) async {
-    final batch = _firestore.batch();
+    final updates = <String, dynamic>{};
     
     for (final item in items) {
-      final docRef = _firestore.collection(_stockCollection).doc();
-      batch.set(docRef, {
+      final ref = _database.ref(_stockNode).push();
+      updates['${_stockNode}/${ref.key}'] = {
         'id': item.id,
+        'firebaseId': ref.key,
         'name': item.name,
         'category': item.category,
         'quantity': item.quantity,
@@ -198,12 +254,12 @@ class FirebaseService {
         'description': item.description,
         'barcode': item.barcode,
         'location': item.location,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+        'createdAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
     }
     
-    await batch.commit();
+    await _database.ref().update(updates);
   }
 
   // ========================================
@@ -213,10 +269,40 @@ class FirebaseService {
   // Vérifier si la connexion à Firebase est active
   static Future<bool> checkConnection() async {
     try {
-      await _firestore.collection('connection_check').doc('test').get();
-      return true;
+      // Test simple - écrire et lire un noeud de test
+      final testRef = _database.ref('connection_test').child('test');
+      await testRef.set({'timestamp': DateTime.now().millisecondsSinceEpoch});
+      final snapshot = await testRef.get();
+      await testRef.remove(); // Nettoyer
+      return snapshot.exists;
     } catch (e) {
+      print('Erreur de connexion Firebase: $e');
       return false;
+    }
+  }
+
+  // Tester la connexion et retourner les détails
+  static Future<Map<String, dynamic>> testConnection() async {
+    try {
+      final startTime = DateTime.now();
+      final testRef = _database.ref('connection_test').child('test_${DateTime.now().millisecondsSinceEpoch}');
+      await testRef.set({'test': true, 'timestamp': DateTime.now().toIso8601String()});
+      
+      final snapshot = await testRef.get();
+      final success = snapshot.exists;
+      
+      await testRef.remove();
+      
+      return {
+        'success': success,
+        'responseTime': DateTime.now().difference(startTime).inMilliseconds,
+        'data': snapshot.value,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
     }
   }
 
@@ -227,19 +313,26 @@ class FirebaseService {
   // Récupérer un emprunt par son ID (pour les retours cross-device)
   static Future<EquipmentCheckout?> getCheckoutById(String checkoutId) async {
     try {
-      final snapshot = await _firestore
-          .collection(_checkoutsCollection)
-          .where('id', isEqualTo: checkoutId)
-          .limit(1)
+      final snapshot = await _database
+          .ref(_checkoutsNode)
+          .orderByChild('id')
+          .equalTo(checkoutId)
+          .limitToFirst(1)
           .get();
       
-      if (snapshot.docs.isEmpty) {
-        return null;
-      }
+      final data = snapshot.value;
+      if (data == null) return null;
+      if (data is! Map) return null;
       
-      final data = snapshot.docs.first.data();
-      data['firebaseId'] = snapshot.docs.first.id;
-      return EquipmentCheckout.fromMap(data);
+      final Map<dynamic, dynamic> dataMap = data;
+      if (dataMap.isEmpty) return null;
+      
+      final entry = dataMap.entries.first;
+      final Map<String, dynamic> itemData = {
+        ...Map<String, dynamic>.from(entry.value),
+        'firebaseId': entry.key,
+      };
+      return EquipmentCheckout.fromMap(itemData);
     } catch (e) {
       return null;
     }
@@ -248,15 +341,23 @@ class FirebaseService {
   // Récupérer tous les emprunts actifs (non retournés)
   static Future<List<EquipmentCheckout>> getActiveCheckouts() async {
     try {
-      final snapshot = await _firestore
-          .collection(_checkoutsCollection)
-          .where('isReturned', isEqualTo: false)
+      final snapshot = await _database
+          .ref(_checkoutsNode)
+          .orderByChild('isReturned')
+          .equalTo(false)
           .get();
       
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['firebaseId'] = doc.id;
-        return EquipmentCheckout.fromMap(data);
+      final data = snapshot.value;
+      if (data == null) return [];
+      if (data is! Map) return [];
+      
+      final Map<dynamic, dynamic> dataMap = data;
+      return dataMap.entries.map((entry) {
+        final Map<String, dynamic> itemData = {
+          ...Map<String, dynamic>.from(entry.value),
+          'firebaseId': entry.key,
+        };
+        return EquipmentCheckout.fromMap(itemData);
       }).toList();
     } catch (e) {
       return [];

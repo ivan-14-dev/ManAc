@@ -12,48 +12,59 @@ class SyncStatusScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer3<SyncProvider, AuthProvider, ConnectivityService>(
       builder: (context, syncProvider, authProvider, connectivity, child) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Connection status card
-              _ConnectionStatusCard(
-                isOnline: connectivity.isConnected,
-                lastConnected: connectivity.lastConnectedAt,
-                lastDisconnected: connectivity.lastDisconnectedAt,
-              ),
-              const SizedBox(height: 16),
-              // Sync status card
-              _SyncStatusCard(
-                isSyncing: syncProvider.isSyncing,
-                syncStatus: syncProvider.syncStatus,
-                lastSyncTime: syncProvider.lastSyncTime,
-                pendingCount: syncProvider.pendingSyncCount,
-              ),
-              const SizedBox(height: 16),
-              // Sync actions
-              _SyncActionsCard(
-                isOnline: connectivity.isConnected,
-                isSyncing: syncProvider.isSyncing,
-                onSyncNow: syncProvider.syncNow,
-                onFullSync: syncProvider.fullSync,
-              ),
-              const SizedBox(height: 16),
-              // User info card
-              if (authProvider.isAuthenticated) ...[
-                _UserInfoCard(
-                  userName: authProvider.userName ?? 'Unknown',
-                  userId: authProvider.userId ?? '',
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Synchronisation'),
+            backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Connection status card
+                _ConnectionStatusCard(
+                  isOnline: connectivity.isConnected,
+                  lastConnected: connectivity.lastConnectedAt,
+                  lastDisconnected: connectivity.lastDisconnectedAt,
                 ),
                 const SizedBox(height: 16),
+                // Sync status card
+                _SyncStatusCard(
+                  isSyncing: syncProvider.isSyncing,
+                  syncStatus: syncProvider.syncStatus,
+                  lastSyncTime: syncProvider.lastSyncTime,
+                  pendingCount: syncProvider.pendingSyncCount,
+                ),
+                const SizedBox(height: 16),
+                // Sync actions
+                _SyncActionsCard(
+                  isOnline: connectivity.isConnected,
+                  isSyncing: syncProvider.isSyncing,
+                  onSyncNow: syncProvider.syncNow,
+                  onFullSync: syncProvider.fullSync,
+                ),
+                const SizedBox(height: 16),
+                // User info card
+                if (authProvider.isAuthenticated) ...[
+                  _UserInfoCard(
+                    userName: authProvider.userName ?? 'Unknown',
+                    userId: authProvider.userId ?? '',
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // Statistics card
+                _StatisticsCard(),
+                const SizedBox(height: 16),
+                // Pending sync items
+                _PendingSyncItemsCard(),
               ],
-              // Statistics card
-              _StatisticsCard(),
-              const SizedBox(height: 16),
-              // Pending sync items
-              _PendingSyncItemsCard(),
-            ],
+            ),
           ),
         );
       },

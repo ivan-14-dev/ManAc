@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/equipment_provider.dart';
+import '../providers/auth_provider.dart';
 import '../models/equipment_checkout.dart';
-import '../widgets/safe_image.dart';
+import '../services/return_service.dart';
 
 class EquipmentReturnScreen extends StatefulWidget {
   const EquipmentReturnScreen({super.key});
@@ -15,6 +15,7 @@ class EquipmentReturnScreen extends StatefulWidget {
 class _EquipmentReturnScreenState extends State<EquipmentReturnScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _flashIdController = TextEditingController();
+  final TextEditingController _matriculeController = TextEditingController();
   bool _isLoading = false;
   bool _showManualReturn = false;
   bool _showFlashReturn = false;
@@ -23,6 +24,7 @@ class _EquipmentReturnScreenState extends State<EquipmentReturnScreen> {
   void dispose() {
     _searchController.dispose();
     _flashIdController.dispose();
+    _matriculeController.dispose();
     super.dispose();
   }
 
@@ -69,6 +71,8 @@ class _EquipmentReturnScreenState extends State<EquipmentReturnScreen> {
 
   Future<void> _processFlashReturn() async {
     final flashId = _flashIdController.text.trim();
+    final matricule = _matriculeController.text.trim();
+    
     if (flashId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -78,58 +82,43 @@ class _EquipmentReturnScreenState extends State<EquipmentReturnScreen> {
       );
       return;
     }
+    
+    if (matricule.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez entrer le matricule'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      final equipmentProvider = context.read<EquipmentProvider>();
+      final returnService = ReturnService();
+      final authProvider = context.read<AuthProvider>();
       
-      // Find checkout by ID (partial match allowed)
-      final allCheckouts = equipmentProvider.allCheckouts;
-      EquipmentCheckout? matchingCheckout;
-      for (final c in allCheckouts) {
-        if (c.id.contains(flashId) || c.borrowerCni.toLowerCase().contains(flashId.toLowerCase())) {
-          matchingCheckout = c;
-          break;
-        }
-      }
-
-      if (matchingCheckout == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Aucun emprunt trouvé avec cet ID'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      if (matchingCheckout.isReturned) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Cet emprunt a déjà été retourné'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
-      }
-
-      await equipmentProvider.returnEquipment(
-        checkoutId: matchingCheckout.id,
+      // Use the new flashReturn method with both checkoutId and matricule
+      final checkout = await returnService.flashReturn(
+        checkoutId: flashId,
+        borrowerMatricule: matricule,
+        userId: authProvider.userId ?? 'system',
+        userName: authProvider.userName ?? 'System',
       );
 
       if (mounted) {
+        // Reload data
+        context.read<EquipmentProvider>().loadData();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${matchingCheckout.equipmentName} retourné avec succès!'),
+            content: Text('${checkout.equipmentName} retourné avec succès!'),
             backgroundColor: Colors.green,
           ),
         );
         _flashIdController.clear();
+        _matriculeController.clear();
       }
     } catch (e) {
       if (mounted) {
@@ -239,92 +228,81 @@ class _EquipmentReturnScreenState extends State<EquipmentReturnScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 30),
-              // Manual Return Card
-              SizedBox(
-                width: double.infinity,
-                child: Card(
-                  child: InkWell(
-                    onTap: () {
-                      setState(() => _showManualReturn = true);
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          Icon(Icons.search, color: Colors.blue, size: 32),
-                          SizedBox(width: 16),
-                          Expanded(
+              // Cards in a responsive grid
+              Row(
+                children: [
+                  Expanded(
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            setState(() => _showManualReturn = true);
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
-                                  'Retour Manuel',
+                                const Icon(Icons.search, color: Colors.blue, size: 40),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Retour\nManuel',
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Rechercher par ID, nom ou salle et confirmer',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          Icon(Icons.chevron_right, color: Colors.grey),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Flash Return Card
-              SizedBox(
-                width: double.infinity,
-                child: Card(
-                  child: InkWell(
-                    onTap: () {
-                      setState(() => _showFlashReturn = true);
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          Icon(Icons.flash_on, color: Colors.orange, size: 32),
-                          SizedBox(width: 16),
-                          Expanded(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            setState(() => _showFlashReturn = true);
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
-                                  'Retour Flash',
+                                const Icon(Icons.flash_on, color: Colors.orange, size: 40),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Retour\nFlash',
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Entrer juste l\'ID d\'emprunt pour retourner',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          Icon(Icons.chevron_right, color: Colors.grey),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -344,7 +322,7 @@ class _EquipmentReturnScreenState extends State<EquipmentReturnScreen> {
             onPressed: _resetToSelection,
           ),
         ),
-        body: Padding(
+        body: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
@@ -355,21 +333,39 @@ class _EquipmentReturnScreenState extends State<EquipmentReturnScreen> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Entrer l\'ID d\'emprunt',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                'Retour Flash',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Le système considérera que tout l\'équipement emprunté avec cet ID est revenu.',
+                'Entrez l\'ID d\'emprunt et le matricule pour traiter le retour.\nLa synchronisation se fait via ces deux informations.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 24),
+              // ID d'emprunt field
               TextField(
                 controller: _flashIdController,
                 decoration: InputDecoration(
-                  hintText: 'ID d\'emprunt ou Matricule',
+                  labelText: 'ID d\'emprunt',
+                  hintText: 'Entrez l\'ID de l\'emprunt',
                   prefixIcon: const Icon(Icons.qr_code),
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Matricule field
+              TextField(
+                controller: _matriculeController,
+                decoration: InputDecoration(
+                  labelText: 'Matricule',
+                  hintText: 'Entrez le matricule de l\'emprunteur',
+                  prefixIcon: const Icon(Icons.badge),
                   filled: true,
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
@@ -391,6 +387,26 @@ class _EquipmentReturnScreenState extends State<EquipmentReturnScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Info card
+              Card(
+                color: Colors.orange[50],
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.orange),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Si l\'ID n\'existe pas en local, un retour sera créé pour la synchronisation.',
+                          style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

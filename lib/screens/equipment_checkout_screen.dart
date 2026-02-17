@@ -428,77 +428,120 @@ class _EquipmentCheckoutScreenState extends State<EquipmentCheckoutScreen> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  child: Card(
-                    child: InkWell(
-                      onTap: () {
-                        setState(() => _selectedCheckoutType = CheckoutType.student);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.school, color: Colors.blue, size: 32),
-                            const SizedBox(width: 16),
-                            const Text(
-                              'Emprunt Étudiant',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: Card(
-                    child: InkWell(
-                      onTap: () {
-                        setState(() => _selectedCheckoutType = CheckoutType.staff);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.badge, color: Colors.orange, size: 32),
-                            const SizedBox(width: 16),
-                            const Text(
-                              'Emprunt Personnel',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: Card(
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CheckoutHistoryScreen(equipmentId: ''),
+                // Cards in a responsive grid
+                Row(
+                  children: [
+                    Expanded(
+                      child: AspectRatio(
+                        aspectRatio: 1.2,
+                        child: Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.history, color: Colors.green, size: 32),
-                            const SizedBox(width: 16),
-                            const Text(
-                              'Voir les emprunts',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() => _selectedCheckoutType = CheckoutType.student);
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.school, color: Colors.blue, size: 40),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Emprunt\nÉtudiant',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: AspectRatio(
+                        aspectRatio: 1.2,
+                        child: Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() => _selectedCheckoutType = CheckoutType.staff);
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.badge, color: Colors.orange, size: 40),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Emprunt\nPersonnel',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // View Checkout Card
+                SizedBox(
+                  width: double.infinity,
+                  child: AspectRatio(
+                    aspectRatio: 4,
+                    child: Card(
+                      elevation: 4,
+                      color: Colors.green[50],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CheckoutHistoryScreen(equipmentId: ''),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.history, color: Colors.green, size: 32),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Voir les emprunts',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

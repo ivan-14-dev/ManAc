@@ -35,6 +35,11 @@
                 android:resource="@style/NormalTheme"
             />
             
+            <!-- Disable Impeller to fix white screen issue -->
+            <meta-data
+                android:name="io.flutter.embedding.android.EnableImpeller"
+                android:value="false"/>
+            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

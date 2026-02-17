@@ -1,3 +1,13 @@
+# Environment variables (contains sensitive data - NEVER commit to version control)
+.env
+.env.local
+.env.*.local
+
+# Firebase configuration (contains sensitive API keys)
+# Note: web/.env is NOT ignored as it's needed for Web builds
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
 # Miscellaneous
 *.class
 *.log

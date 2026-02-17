@@ -7,7 +7,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 /// Service pour gérer le stockage local des fichiers
 class FileStorageService {
@@ -247,33 +247,33 @@ class FileStorageService {
     }
   }
 
-  /// Sauvegarde les données dans Firestore
+  /// Sauvegarde les données dans Realtime Database
   static Future<bool> saveToFirestore(
     String collection, 
     String docId, 
     Map<String, dynamic> data
   ) async {
     try {
-      await FirebaseFirestore.instance.collection(collection).doc(docId).set(data);
+      await FirebaseDatabase.instance.ref('$collection/$docId').set(data);
       return true;
     } catch (e) {
-      print('Erreur lors de la sauvegarde Firestore: $e');
+      print('Erreur lors de la sauvegarde Realtime DB: $e');
       return false;
     }
   }
 
-  /// Charge les données depuis Firestore
+  /// Charge les données depuis Realtime Database
   static Future<Map<String, dynamic>?> loadFromFirestore(
     String collection, 
     String docId
   ) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection(collection).doc(docId).get();
-      if (doc.exists) {
-        return doc.data();
+      final snapshot = await FirebaseDatabase.instance.ref('$collection/$docId').get();
+      if (snapshot.exists) {
+        return Map<String, dynamic>.from(snapshot.value as Map);
       }
     } catch (e) {
-      print('Erreur lors du chargement Firestore: $e');
+      print('Erreur lors du chargement Realtime DB: $e');
     }
     return null;
   }

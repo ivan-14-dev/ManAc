@@ -63,12 +63,22 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
                 // Search Field
                 TextField(
                   controller: _searchController,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.white 
+                        : Colors.black87,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Search equipment...',
-                    prefixIcon: const Icon(Icons.search, color: AppTheme.primaryOrange),
+                    hintStyle: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.white54 
+                          : Colors.grey[600],
+                    ),
+                    prefixIcon: Icon(Icons.search, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppTheme.primaryOrange),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: Icon(Icons.clear, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.grey[600]),
                             onPressed: () {
                               _searchController.clear();
                               equipmentProvider.setSearchQuery('');
@@ -76,7 +86,9 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
                           )
                         : null,
                     filled: true,
-                    fillColor: AppTheme.backgroundLight,
+                    fillColor: Theme.of(context).brightness == Brightness.dark 
+                        ? const Color(0xFF2C2C2C) 
+                        : AppTheme.backgroundLight,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,

@@ -20,6 +20,158 @@ class ReturnService {
 
   final _uuid = const Uuid();
 
+  /// Flash return - deux cas:
+  /// 1. Si l'ID n'est pas en local: créer un retour avec cet ID
+  /// 2. Si l'ID existe en local: traiter le retour normalement
+  /// La synchronisation se fait via: ID de l'emprunt + matricule
+  Future<EquipmentCheckout> flashReturn({
+    required String checkoutId,
+    required String borrowerMatricule,
+    String? borrowerName,
+    String? equipmentName,
+    int? quantity,
+    String? destinationRoom,
+    required String userId,
+    required String userName,
+    String? notes,
+  }) async {
+    // First try to find in local storage
+    var checkout = LocalStorageService.getCheckoutById(checkoutId);
+    
+    // If not found locally, try to fetch from Firebase
+    if (checkout == null) {
+      try {
+        checkout = await FirebaseService.getCheckoutById(checkoutId);
+        if (checkout != null) {
+          // Save to local storage for offline access
+          await LocalStorageService.addCheckout(checkout);
+        }
+      } catch (e) {
+        // Firebase not available or error, continue with null
+      }
+    }
+    
+    // Case 1: ID not found locally or in Firebase
+    // Create a return record for synchronization using the provided info
+    if (checkout == null) {
+      return await _createFlashReturnFromId(
+        checkoutId: checkoutId,
+        borrowerMatricule: borrowerMatricule,
+        borrowerName: borrowerName ?? 'Inconnu',
+        equipmentName: equipmentName ?? 'Équipement',
+        quantity: quantity ?? 1,
+        destinationRoom: destinationRoom ?? 'Inconnue',
+        userId: userId,
+        userName: userName,
+        notes: notes,
+      );
+    }
+    
+    // Case 2: ID found locally - process return normally
+    if (checkout.isReturned) {
+      throw Exception('Equipment already returned');
+    }
+
+    return await _processReturn(
+      checkout: checkout,
+      userId: userId,
+      userName: userName,
+      notes: notes,
+    );
+  }
+
+  /// Creates a flash return from an ID that doesn't exist locally
+  /// This allows synchronization based on checkoutId + borrowerMatricule
+  Future<EquipmentCheckout> _createFlashReturnFromId({
+    required String checkoutId,
+    required String borrowerMatricule,
+    required String borrowerName,
+    required String equipmentName,
+    required int quantity,
+    required String destinationRoom,
+    required String userId,
+    required String userName,
+    String? notes,
+  }) async {
+    // Create a new checkout record for the return
+    // This will be synced to match the original borrow record
+    final now = DateTime.now();
+    final flashCheckout = EquipmentCheckout(
+      id: checkoutId,
+      equipmentId: '',
+      equipmentName: equipmentName,
+      equipmentPhotoPath: '',
+      borrowerName: borrowerName,
+      borrowerCni: borrowerMatricule, // Using matricule as CNI for sync
+      borrowerEmail: '',
+      cniPhotoPath: '',
+      destinationRoom: destinationRoom,
+      quantity: quantity,
+      checkoutTime: now, // Use current time as checkout time
+      returnTime: now,
+      isReturned: true,
+      notes: notes ?? 'Retour Flash - ID externe',
+      userId: userId,
+      userName: userName,
+      isSynced: false,
+    );
+
+    // Save locally as returned
+    await LocalStorageService.addCheckout(flashCheckout);
+
+    // Queue for synchronization with special flash return metadata
+    await SyncService.queueForSync(
+      action: 'create',
+      collection: 'equipment_checkouts',
+      data: {
+        ...flashCheckout.toMap(),
+        '_syncKeys': {
+          'checkoutId': checkoutId,
+          'borrowerMatricule': borrowerMatricule,
+        },
+        '_isFlashReturn': true,
+      },
+    );
+
+    // Create activity log
+    await _createFlashReturnActivity(flashCheckout, userId, userName, borrowerMatricule);
+
+    return flashCheckout;
+  }
+
+  /// Creates activity log for flash return
+  Future<void> _createFlashReturnActivity(
+    EquipmentCheckout checkout,
+    String userId,
+    String userName,
+    String borrowerMatricule,
+  ) async {
+    final activity = Activity(
+      id: _uuid.v4(),
+      type: 'flash_return',
+      title: 'Retour Flash',
+      description: 'Retour flash de ${checkout.quantity} ${checkout.equipmentName} par matricule $borrowerMatricule. Synchronisation via ID: ${checkout.id}',
+      userId: userId,
+      userName: userName,
+      metadata: {
+        'checkoutId': checkout.id,
+        'borrowerMatricule': borrowerMatricule,
+        'equipmentName': checkout.equipmentName,
+        'quantity': checkout.quantity,
+        'returnTime': checkout.returnTime?.toIso8601String(),
+        'isFlashReturn': true,
+        'action': 'flash_return',
+      },
+    );
+
+    await LocalStorageService.addActivity(activity);
+    await SyncService.queueForSync(
+      action: 'create',
+      collection: 'activities',
+      data: activity.toMap(),
+    );
+  }
+
   /// Returns equipment using checkout ID (direct return)
   /// Works even if checkout was created on another device
   Future<EquipmentCheckout> returnByCheckoutId({

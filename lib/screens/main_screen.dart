@@ -411,9 +411,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildBottomNavigation() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -448,6 +449,7 @@ class _MainScreenState extends State<MainScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -455,7 +457,7 @@ class _MainScreenState extends State<MainScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected 
-              ? AppTheme.primaryOrange.withOpacity(0.15)
+              ? AppTheme.primaryOrange.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
@@ -464,14 +466,14 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppTheme.primaryOrange : Colors.grey[600],
+              color: isSelected ? AppTheme.primaryOrange : (isDark ? Colors.white70 : Colors.grey[600]),
               size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppTheme.primaryOrange : Colors.grey[600],
+                color: isSelected ? AppTheme.primaryOrange : (isDark ? Colors.white70 : Colors.grey[600]),
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),

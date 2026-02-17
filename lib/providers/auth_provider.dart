@@ -10,11 +10,13 @@ import 'package:uuid/uuid.dart';
 import '../models/activity.dart';
 import '../services/local_storage_service.dart';
 import '../services/sync_service.dart';
+import '../services/manac_config_service.dart';
 
 // Provider d'authentification avec ChangeNotifier pour la réactivité
 class AuthProvider with ChangeNotifier {
   // Instance Firebase Auth
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final ManacConfigService _configService = ManacConfigService();
   
   // Utilisateur actuellement connecté
   User? _currentUser;
@@ -98,6 +100,9 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
       _userId = credential.user?.uid;
+      
+      // Sauvegarder l'état de connexion
+      await _configService.setLoggedIn(true);
       _userName = credential.user?.displayName ?? email.split('@')[0];
     } on FirebaseAuthException catch (e) {
       _error = _getErrorMessage(e.code);
@@ -175,6 +180,9 @@ class AuthProvider with ChangeNotifier {
     await _auth.signOut();
     _userId = null;
     _userName = null;
+    
+    // Supprimer l'état de connexion
+    await _configService.setLoggedIn(false);
     notifyListeners();
   }
 

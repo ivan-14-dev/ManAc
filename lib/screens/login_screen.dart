@@ -42,6 +42,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Soumettre le formulaire (connexion ou inscription)
   Future<void> _submit() async {
+    // Si mode inscription, montrer un message
+    if (!_isLogin) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.info_outline, color: AppTheme.primaryOrange),
+              SizedBox(width: 8),
+              Text('Information'),
+            ],
+          ),
+          content: const Text(
+            'Pour créer un compte, veuillez contacter l\'administrateur de l\'application.',
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     // Valider le formulaire
     if (!_formKey.currentState!.validate()) return;
 
@@ -135,7 +162,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.grey[850] 
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(

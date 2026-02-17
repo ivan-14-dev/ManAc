@@ -34,7 +34,7 @@ class SafeImage extends StatelessWidget {
       return _buildNetworkImage();
     }
 
-    // It's a file path
+    // It's a file path - check if file exists first
     return _buildFileImage();
   }
 
@@ -52,52 +52,64 @@ class SafeImage extends StatelessWidget {
   }
 
   Widget _buildNetworkImage() {
-    final imageWidget = Image.network(
-      imagePath!,
+    return Container(
       width: width,
       height: height,
-      fit: fit,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          width: width,
-          height: height,
-          color: Colors.grey[200],
-          child: const Center(
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: borderRadius,
+      ),
+      child: Image.network(
+        imagePath!,
+        width: width,
+        height: height,
+        fit: fit,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(
             child: CircularProgressIndicator(),
-          ),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return _buildErrorPlaceholder();
-      },
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _buildErrorPlaceholder();
+        },
+      ),
     );
-
-    return borderRadius != null
-        ? ClipRRect(borderRadius: borderRadius!, child: imageWidget)
-        : imageWidget;
   }
 
   Widget _buildFileImage() {
+    // Check if file exists
     final file = File(imagePath!);
-    
     if (!file.existsSync()) {
       return _buildErrorPlaceholder();
     }
 
-    final imageWidget = Image.file(
-      file,
+    return Container(
       width: width,
       height: height,
-      fit: fit,
-      errorBuilder: (context, error, stackTrace) {
-        return _buildErrorPlaceholder();
-      },
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: borderRadius,
+      ),
+      child: ClipRRect(
+        borderRadius: borderRadius ?? BorderRadius.zero,
+        child: Image.file(
+          file,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildErrorPlaceholder();
+          },
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (wasSynchronouslyLoaded) {
+              return child;
+            }
+            return frame != null ? child : const Center(child: CircularProgressIndicator());
+          },
+        ),
+      ),
     );
-
-    return borderRadius != null
-        ? ClipRRect(borderRadius: borderRadius!, child: imageWidget)
-        : imageWidget;
   }
 
   Widget _buildErrorPlaceholder() {

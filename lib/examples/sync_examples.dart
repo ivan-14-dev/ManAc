@@ -1,3 +1,4 @@
+import '../models/activity.dart';
 import '../services/checkout_service.dart';
 import '../services/return_service.dart';
 import '../services/activity_sync_manager.dart';
@@ -207,7 +208,7 @@ class SyncExamples {
     
     // In a real scenario, remoteActivities would come from cloud
     // For now, we'll demonstrate with local data comparison
-    final remoteActivities = List.from(localActivities);
+    final remoteActivities = localActivities.cast<Activity>();
     
     // The user who requested the sync validates the data
     final validationResult = activitySyncManager.validateSyncData(

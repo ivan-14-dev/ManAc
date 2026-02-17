@@ -4,15 +4,18 @@
 // ========================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'firebase_options.dart';
 import 'callback_dispatcher.dart';
 import 'services/local_storage_service.dart';
 import 'services/connectivity_service.dart';
+import 'services/app_theme_service.dart';
 import 'providers/stock_provider.dart';
 import 'providers/equipment_provider.dart';
 import 'providers/sync_provider.dart';
@@ -20,6 +23,10 @@ import 'providers/auth_provider.dart' as app_auth;
 import 'screens/main_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/intro_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/pin_login_screen.dart';
+import 'services/manac_config_service.dart';
 import 'theme/app_theme.dart';
 
 // Fonction principale asynchrone - point d'entrée de l'application
@@ -27,13 +34,36 @@ void main() async {
   // Initialiser les liaisons Flutter avant tout code async
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Charger les variables d'environnement depuis .env
+  // Ignore les erreurs car les valeurs par défaut sont utilisées si .env n'existe pas
+  try {
+    await dotenv.load(
+      fileName: kIsWeb ? '.env' : '.env',
+    );
+  } catch (e) {
+    // On continue sans les variables d'environnement
+    // Les valeurs par défaut dans firebase_options seront utilisées
+    debugPrint('Note: .env non chargé - utilisation des valeurs par défaut');
+  }
+  
   // Initialiser Firebase avec les options de la plateforme
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Vérifier si Firebase est déjà initialisé pour éviter les erreurs lors du hot reload
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    // Firebase pourrait déjà être initialisé, on continue
+    debugPrint('Firebase initialization: $e');
+  }
   
   // Initialiser le stockage local pour les données hors ligne
   await LocalStorageService.init();
+  
+  // Initialiser le service de thème
+  await AppThemeService().init();
   
   // Initialiser Workmanager pour la synchronisation en arrière-plan
   Workmanager().initialize(
@@ -67,28 +97,35 @@ class ManacApp extends StatefulWidget {
 class _ManacAppState extends State<ManacApp> {
   // Indicateur d'initialisation terminée
   bool _isInitialized = false;
+  bool _showIntro = false;
+  bool _showOnboarding = false;
+  bool _showPinLogin = false;
+  final ManacConfigService _configService = ManacConfigService();
+  final AppThemeService _themeService = AppThemeService();
 
   @override
   void initState() {
     super.initState();
     // Vérifier l'authentification après la première frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAuth();
+      _checkFirstTime();
     });
   }
 
-  // Vérifier si l'utilisateur est déjà authentifié
-  void _checkAuth() {
-    final auth = app_auth.AuthProvider();
-    if (auth.isAuthenticated) {
-      setState(() {
-        _isInitialized = true;
-      });
-    } else {
-      setState(() {
-        _isInitialized = true;
-      });
-    }
+  // Vérifier si premier lancement
+  Future<void> _checkFirstTime() async {
+    final isOfflineMode = _configService.isOfflineMode();
+    final isLoggedIn = _configService.isLoggedIn();
+    final hasPin = _configService.hasPinCode();
+    
+    setState(() {
+      // Si premier lancement (offlineMode pas encore défini), montrer l'intro
+      _showIntro = !isOfflineMode;
+      _showOnboarding = !isOfflineMode;
+      // Si déjà connecté ET a un PIN, montrer l'écran de connexion PIN
+      _showPinLogin = isLoggedIn && hasPin && isOfflineMode;
+      _isInitialized = true;
+    });
   }
 
   // Callback appelé quand l'initialisation est terminée
@@ -96,6 +133,47 @@ class _ManacAppState extends State<ManacApp> {
     setState(() {
       _isInitialized = true;
     });
+  }
+
+  // Naviguer vers l'écran approprié
+  Widget _getHomeScreen() {
+    // Si premier lancement, montrer l'intro
+    if (_showIntro) {
+      return IntroScreen(
+        onComplete: () {
+          setState(() {
+            _showIntro = false;
+            _showOnboarding = true;
+          });
+        },
+      );
+    }
+    
+    // Après l'intro, montrer l'onboarding (politique de confidentialité)
+    if (_showOnboarding) {
+      return OnboardingScreen(
+        onComplete: () {
+          setState(() {
+            _showOnboarding = false;
+          });
+        },
+      );
+    }
+    
+    // Si utilisateur connecté avec PIN, montrer l'écran de connexion PIN
+    if (_showPinLogin) {
+      return const PinLoginScreen();
+    }
+    
+    // Retourner le login ou main screen selon l'authentification
+    return Consumer<app_auth.AuthProvider>(
+      builder: (context, auth, _) {
+        if (auth.isAuthenticated) {
+          return const MainScreen();
+        }
+        return const LoginScreen();
+      },
+    );
   }
 
   @override
@@ -142,18 +220,11 @@ class _ManacAppState extends State<ManacApp> {
       child: MaterialApp(
         title: 'Manac - Gestion de Stock',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.light,
-        // Naviguer selon l'état d'authentification
-        home: Consumer<app_auth.AuthProvider>(
-          builder: (context, auth, _) {
-            if (auth.isAuthenticated) {
-              return const MainScreen();
-            }
-            return const LoginScreen();
-          },
-        ),
+        theme: _themeService.buildLightTheme(),
+        darkTheme: _themeService.buildDarkTheme(),
+        themeMode: _themeService.themeMode,
+        // Naviguer vers l'écran approprié
+        home: _getHomeScreen(),
       ),
     );
   }
