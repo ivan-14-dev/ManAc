@@ -5,6 +5,13 @@ import 'package:image_picker/image_picker.dart';
 import '../providers/equipment_provider.dart';
 import '../widgets/safe_image.dart';
 
+class EquipmentEntry {
+  String serialNumber;
+  String location;
+
+  EquipmentEntry({required this.serialNumber, required this.location});
+}
+
 class AddEquipmentScreen extends StatefulWidget {
   const AddEquipmentScreen({super.key});
 
@@ -17,10 +24,13 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+
+  // Controllers for new equipment entry
   final TextEditingController _serialNumberController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _quantityController = TextEditingController(text: '1');
-  final TextEditingController _valueController = TextEditingController(text: '0');
+
+  // List to store multiple equipment entries
+  final List<EquipmentEntry> _equipmentEntries = [];
 
   String? _photoPath;
   bool _isLoading = false;
@@ -41,6 +51,33 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
     'Other',
   ];
 
+  void _addEquipmentEntry() {
+    if (_serialNumberController.text.trim().isEmpty || _locationController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in serial number and storage location'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _equipmentEntries.add(EquipmentEntry(
+        serialNumber: _serialNumberController.text.trim(),
+        location: _locationController.text.trim(),
+      ));
+      _serialNumberController.clear();
+      _locationController.clear();
+    });
+  }
+
+  void _removeEquipmentEntry(int index) {
+    setState(() {
+      _equipmentEntries.removeAt(index);
+    });
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -48,8 +85,6 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
     _descriptionController.dispose();
     _serialNumberController.dispose();
     _locationController.dispose();
-    _quantityController.dispose();
-    _valueController.dispose();
     super.dispose();
   }
 
@@ -74,26 +109,39 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
   Future<void> _saveEquipment() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_equipmentEntries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add at least one equipment entry'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
       final equipmentProvider = context.read<EquipmentProvider>();
       
-      await equipmentProvider.addEquipment(
-        name: _nameController.text.trim(),
-        category: _categoryController.text.trim(),
-        description: _descriptionController.text.trim(),
-        serialNumber: _serialNumberController.text.trim(),
-        location: _locationController.text.trim(),
-        quantity: int.parse(_quantityController.text),
-        value: double.tryParse(_valueController.text) ?? 0,
-        photoPath: _photoPath,
-      );
+      // Save each equipment entry
+      for (final entry in _equipmentEntries) {
+        await equipmentProvider.addEquipment(
+          name: _nameController.text.trim(),
+          category: _categoryController.text.trim(),
+          description: _descriptionController.text.trim(),
+          serialNumber: entry.serialNumber,
+          location: entry.location,
+          quantity: 1,
+          value: 0,
+          photoPath: _photoPath,
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Equipment added successfully!'),
+          SnackBar(
+            content: Text('${_equipmentEntries.length} equipment(s) added successfully!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -239,16 +287,32 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'IDENTIFICATION',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'IDENTIFICATION',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: _addEquipmentEntry,
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Add'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       
+                      // Input fields for new entry
                       TextFormField(
                         controller: _serialNumberController,
                         decoration: const InputDecoration(
@@ -256,7 +320,6 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
                           prefixIcon: Icon(Icons.numbers),
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) => value!.isEmpty ? 'Enter serial number' : null,
                       ),
                       
                       const SizedBox(height: 16),
@@ -268,65 +331,51 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
                           prefixIcon: Icon(Icons.location_on),
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) => value!.isEmpty ? 'Enter storage location' : null,
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Quantity & Value
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'QUANTITY & VALUE',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
                       
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _quantityController,
-                              decoration: const InputDecoration(
-                                labelText: 'Quantity *',
-                                prefixIcon: Icon(Icons.inventory),
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (value!.isEmpty) return 'Enter quantity';
-                                final qty = int.tryParse(value);
-                                if (qty == null || qty <= 0) return 'Invalid quantity';
-                                return null;
-                              },
-                            ),
+                      // List of added equipment entries
+                      if (_equipmentEntries.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Added Equipment (${_equipmentEntries.length})',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _valueController,
-                              decoration: const InputDecoration(
-                                labelText: 'Value (XOF)',
-                                prefixIcon: Icon(Icons.attach_money),
-                                border: OutlineInputBorder(),
+                        ),
+                        const SizedBox(height: 12),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _equipmentEntries.length,
+                          itemBuilder: (context, index) {
+                            final entry = _equipmentEntries[index];
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: Colors.blue[100],
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: TextStyle(color: Colors.blue[800]),
+                                  ),
+                                ),
+                                title: Text(
+                                  entry.serialNumber,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text(entry.location),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _removeEquipmentEntry(index),
+                                ),
                               ),
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            ),
-                          ),
-                        ],
-                      ),
+                            );
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
