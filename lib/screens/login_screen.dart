@@ -1,12 +1,14 @@
 // ========================================
 // Écran de connexion / Inscription
 // Permet aux utilisateurs de se connecter ou créer un compte
-// Utilise Firebase Authentication (email/password)
+// Utilise Firebase Authentication (email/password) ou API locale
 // ========================================
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/local_api_service.dart';
+import '../services/manac_config_service.dart';
 import '../theme/app_theme.dart';
 import 'main_screen.dart';
 
@@ -30,6 +32,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   // Afficher/masquer le mot de passe
   bool _obscurePassword = true;
+  // Type de connexion: 'firebase' ou 'local'
+  String _loginMethod = 'firebase';
+  // Indicateur de chargement pour API locale
+  bool _isLoadingLocal = false;
 
   // Libérer les ressources des contrôleurs
   @override
@@ -40,7 +46,46 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // Widget pour le bouton de méthode de connexion
+  Widget _buildLoginMethodButton(String label, String value, IconData icon) {
+    final isSelected = _loginMethod == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _loginMethod = value;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryOrange : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? Colors.white : Colors.grey[600],
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[600],
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Soumettre le formulaire (connexion ou inscription)
+  // Tente Firebase et API locale simultanément, utilise celle qui réussit
   Future<void> _submit() async {
     // Si mode inscription, montrer un message
     if (!_isLogin) {
@@ -72,29 +117,78 @@ class _LoginScreenState extends State<LoginScreen> {
     // Valider le formulaire
     if (!_formKey.currentState!.validate()) return;
 
-    // Obtenir le provider d'authentification
     final authProvider = context.read<AuthProvider>();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
-    if (_isLogin) {
-      // Connexion avec email et mot de passe
-      await authProvider.signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-    } else {
-      // Inscription avec email, mot de passe et nom
-      await authProvider.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        name: _nameController.text.trim(),
-      );
+    // Afficher indicateur de chargement
+    setState(() => _isLoadingLocal = true);
+
+    // Tenter les deux connexions simultanément
+    final results = await Future.wait([
+      _tryFirebaseLogin(authProvider, email, password),
+      _tryLocalApiLogin(authProvider, email, password),
+    ]);
+
+    setState(() => _isLoadingLocal = false);
+
+    // Vérifier si au moins une connexion a réussi
+    final firebaseSuccess = results[0];
+    final localApiSuccess = results[1];
+
+    if (!firebaseSuccess && !localApiSuccess) {
+      // Les deux ont échoué - afficher un message d'erreur
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Échec de connexion. Vérifiez votre connexion réseau ou vos identifiants.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
     }
+    // Si l'une des deux a réussi, la navigation est gérée dans les méthodes
+  }
 
-    // Si authentifié, naviguer vers l'écran principal
-    if (authProvider.isAuthenticated && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainScreen()),
+  // Tenter la connexion Firebase
+  Future<bool> _tryFirebaseLogin(AuthProvider authProvider, String email, String password) async {
+    try {
+      await authProvider.signIn(email: email, password: password);
+      if (authProvider.isAuthenticated && mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Tenter la connexion API locale
+  Future<bool> _tryLocalApiLogin(AuthProvider authProvider, String email, String password) async {
+    if (!ManacConfigService.localApiEnabled) return false;
+    
+    try {
+      final result = await LocalApiService.login(
+        email: email,
+        password: password,
       );
+
+      if (result.success && result.user != null) {
+        await authProvider.saveLocalUser(result.user!, result.token ?? '');
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const MainScreen()),
+          );
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
     }
   }
 
@@ -176,6 +270,37 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Column(
                         children: [
+                          // Sélecteur de méthode de connexion
+                          if (ManacConfigService.localApiEnabled) ...[
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildLoginMethodButton(
+                                      'Firebase',
+                                      'firebase',
+                                      Icons.cloud,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildLoginMethodButton(
+                                      'API Locale',
+                                      'local',
+                                      Icons.dns,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
                           // Champ Nom (uniquement pour l'inscription)
                           if (!_isLogin) ...[
                             TextFormField(
@@ -283,7 +408,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: authProvider.isLoading ? null : _submit,
+                              onPressed: (authProvider.isLoading || _isLoadingLocal) ? null : _submit,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.primaryOrange,
                                 foregroundColor: Colors.white,
@@ -291,7 +416,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: authProvider.isLoading
+                              child: (authProvider.isLoading || _isLoadingLocal)
                                   ? const SizedBox(
                                       width: 24,
                                       height: 24,
@@ -301,7 +426,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     )
                                   : Text(
-                                      _isLogin ? 'Se connecter' : 'S\'inscrire',
+                                      _isLogin 
+                                          ? (_loginMethod == 'local' ? 'Connexion API Locale' : 'Se connecter') 
+                                          : 'S\'inscrire',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,

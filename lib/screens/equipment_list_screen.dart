@@ -4,6 +4,7 @@ import '../models/equipment.dart';
 import '../providers/equipment_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/safe_image.dart';
+import '../widgets/context_extensions.dart';
 import 'equipment_detail_screen.dart';
 import 'add_equipment_screen.dart';
 

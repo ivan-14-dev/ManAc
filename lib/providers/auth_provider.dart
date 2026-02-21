@@ -1,13 +1,14 @@
 // ========================================
 // Provider d'authentification
 // Gère la connexion, inscription et déconnexion des utilisateurs
-// Utilise Firebase Authentication
+// Utilise Firebase Authentication ou API locale
 // ========================================
 
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:uuid/uuid.dart';
 import '../models/activity.dart';
+import '../models/user.dart';
 import '../services/local_storage_service.dart';
 import '../services/sync_service.dart';
 import '../services/manac_config_service.dart';
@@ -15,11 +16,11 @@ import '../services/manac_config_service.dart';
 // Provider d'authentification avec ChangeNotifier pour la réactivité
 class AuthProvider with ChangeNotifier {
   // Instance Firebase Auth
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
   final ManacConfigService _configService = ManacConfigService();
   
   // Utilisateur actuellement connecté
-  User? _currentUser;
+  firebase_auth.User? _currentUser;
   String? _userId;
   String? _userName;
   // Indicateur de chargement
@@ -28,7 +29,7 @@ class AuthProvider with ChangeNotifier {
   String _error = '';
 
   // Getters pour accéder aux propriétés
-  User? get currentUser => _currentUser;
+  firebase_auth.User? get currentUser => _currentUser;
   String? get userId => _userId;
   String? get userName => _userName;
   bool get isLoading => _isLoading;
@@ -46,7 +47,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Callback appelé quand l'état d'authentification change
-  Future<void> _onAuthStateChanged(User? user) async {
+  Future<void> _onAuthStateChanged(firebase_auth.User? user) async {
     if (user != null) {
       _currentUser = user;
       _userId = user.uid;
@@ -104,7 +105,7 @@ class AuthProvider with ChangeNotifier {
       // Sauvegarder l'état de connexion
       await _configService.setLoggedIn(true);
       _userName = credential.user?.displayName ?? email.split('@')[0];
-    } on FirebaseAuthException catch (e) {
+    } on firebase_auth.FirebaseAuthException catch (e) {
       _error = _getErrorMessage(e.code);
     } catch (e) {
       _error = 'Une erreur s\'est produite: $e';
@@ -147,7 +148,7 @@ class AuthProvider with ChangeNotifier {
       
       _userId = credential.user?.uid;
       _userName = name;
-    } on FirebaseAuthException catch (e) {
+    } on firebase_auth.FirebaseAuthException catch (e) {
       _error = _getErrorMessage(e.code);
     } catch (e) {
       _error = 'Une erreur s\'est produite: $e';
@@ -201,7 +202,7 @@ class AuthProvider with ChangeNotifier {
     try {
       await _auth.sendPasswordResetEmail(email: email);
       _error = 'Email de réinitialisation du mot de passe envoyé';
-    } on FirebaseAuthException catch (e) {
+    } on firebase_auth.FirebaseAuthException catch (e) {
       _error = _getErrorMessage(e.code);
     } catch (e) {
       _error = 'Une erreur s\'est produite: $e';
@@ -238,6 +239,41 @@ class AuthProvider with ChangeNotifier {
   // Effacer le message d'erreur
   void clearError() {
     _error = '';
+    notifyListeners();
+  }
+
+  // Sauvegarder un utilisateur connecté via API locale
+  Future<void> saveLocalUser(User user, String token) async {
+    _userId = user.id;
+    _userName = user.name;
+    _currentUser = null; // Pas un utilisateur Firebase
+    
+    // Sauvegarder les infos utilisateur en stockage local
+    await LocalStorageService.setSetting('userId', user.id);
+    await LocalStorageService.setSetting('userName', user.name);
+    await LocalStorageService.setSetting('userToken', token);
+    await LocalStorageService.setSetting('userEmail', user.email);
+    await LocalStorageService.setSetting('userRole', user.role ?? '');
+    await _configService.setLoggedIn(true);
+    
+    // Sauvegarder les informations utilisateur
+    await _configService.saveUserConfig(
+      name: user.name,
+      email: user.email,
+      department: user.department,
+    );
+    
+    // Ajouter une activité de connexion
+    final activity = Activity(
+      id: const Uuid().v4(),
+      type: 'login_local',
+      title: 'Connexion API Locale',
+      description: 'Connexion via API locale: ${user.email}',
+      userId: user.id,
+      userName: user.name,
+    );
+    await LocalStorageService.addActivity(activity);
+    
     notifyListeners();
   }
 }

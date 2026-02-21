@@ -6,6 +6,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ManacConfigService {
   static final ManacConfigService _instance = ManacConfigService._internal();
@@ -20,6 +21,37 @@ class ManacConfigService {
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+  }
+
+  // ==================== Local API Configuration ====================
+
+  /// Get local API URL from environment
+  static String get localApiUrl {
+    try {
+      return dotenv.env['LOCAL_API_URL'] ?? 'http://192.168.1.100:8080';
+    } catch (e) {
+      return 'http://192.168.1.100:8080';
+    }
+  }
+
+  /// Check if local API is enabled
+  static bool get localApiEnabled {
+    try {
+      final value = dotenv.env['LOCAL_API_ENABLED'] ?? 'true';
+      return value.toLowerCase() == 'true';
+    } catch (e) {
+      return true;
+    }
+  }
+
+  /// Save custom local API URL
+  Future<bool> setLocalApiUrl(String url) async {
+    return await _prefs?.setString('local_api_url', url) ?? false;
+  }
+
+  /// Get custom or default local API URL
+  String getLocalApiUrl() {
+    return _prefs?.getString('local_api_url') ?? localApiUrl;
   }
 
   // ==================== User Configuration ====================

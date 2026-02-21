@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
 import '../providers/equipment_provider.dart';
 import '../models/daily_report.dart';
 import '../services/local_storage_service.dart';
 import '../services/pdf_report_service.dart';
-import 'dart:io';
+import '../services/report_service.dart';
 
 // Fonctions helper pour formater les dates en français
 String _formatDateFrench(DateTime date) {
@@ -37,6 +39,7 @@ class DailyReportScreen extends StatefulWidget {
 class _DailyReportScreenState extends State<DailyReportScreen> {
   bool _isGenerating = false;
   DateTime _selectedMonth = DateTime.now();
+  bool _useRealData = true; // Par défaut, utiliser les données réelles
 
   @override
   void initState() {
@@ -62,7 +65,17 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
 
     try {
       final equipmentProvider = context.read<EquipmentProvider>();
-      await equipmentProvider.generateDailyReport();
+      
+      if (_useRealData) {
+        // Générer avec les données réelles (Firebase + Local)
+        await ReportService.generateDailyReportWithRealData(
+          date: DateTime.now(),
+          userName: 'System',
+        );
+      } else {
+        // Générer avec les données locales uniquement
+        await equipmentProvider.generateDailyReport();
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -197,14 +210,60 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
   }
 
   void _exportReport(DailyReport report) async {
-    // Générer et exporter le rapport en PDF
+    // Afficher un menu pour choisir l'action
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Exporter le rapport',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+              title: const Text('Générer PDF'),
+              subtitle: const Text('Créer un fichier PDF du rapport'),
+              onTap: () {
+                Navigator.pop(context);
+                _generateAndExportPdf(report);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.save, color: Colors.blue),
+              title: const Text('Sauvegarder en fichier'),
+              subtitle: const Text('Enregistrer le rapport localement'),
+              onTap: () {
+                Navigator.pop(context);
+                _saveReportToFile(report);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.save_alt, color: Colors.green),
+              title: const Text('Générer et sauvegarder'),
+              subtitle: const Text('Créer PDF et l\'enregistrer'),
+              onTap: () {
+                Navigator.pop(context);
+                _generateAndSavePdf(report);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _generateAndExportPdf(DailyReport report) async {
     try {
       setState(() => _isGenerating = true);
       
       // Générer le PDF
       final pdfFile = await PdfReportService.generateDailyReportPdf(report);
       
-      //Partager le PDF
+      // Partager le PDF
       await PdfReportService.shareReport(pdfFile, report);
       
       if (mounted) {
@@ -229,6 +288,82 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
     }
   }
 
+  Future<void> _saveReportToFile(DailyReport report) async {
+    try {
+      setState(() => _isGenerating = true);
+      
+      // Générer le PDF
+      final pdfFile = await PdfReportService.generateDailyReportPdf(report);
+      
+      // Sauvegarder le fichier
+      final savedPath = await ReportService.saveReportToFile(pdfFile, report);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Rapport sauvegardé: $savedPath'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la sauvegarde: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
+  Future<void> _generateAndSavePdf(DailyReport report) async {
+    try {
+      setState(() => _isGenerating = true);
+      
+      // Obtenir les données réelles pour un rapport complet
+      final data = await ReportService.getRealTimeData(
+        startDate: report.date,
+        endDate: report.date.add(const Duration(days: 1)),
+      );
+      
+      // Générer un rapport complet avec les données réelles
+      final pdfFile = await ReportService.generateCompletePdfReport(
+        report: report,
+        checkouts: data.checkouts,
+        equipment: data.equipment,
+      );
+      
+      // Sauvegarder le fichier
+      final savedPath = await ReportService.saveReportToFile(pdfFile, report);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Rapport complet sauvegardé: $savedPath'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
   List<DailyReport> _getMonthlyReports(int year, int month) {
     return LocalStorageService.getDailyReportsByMonth(year, month);
   }
@@ -243,7 +378,52 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
         // Today's Report Status
         Padding(
           padding: const EdgeInsets.all(16),
-          child: FutureBuilder<DailyReport?>(
+          child: Column(
+            children: [
+              // Toggle pour données réelles
+              Card(
+                color: _useRealData ? Colors.green[50] : Colors.grey[100],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _useRealData ? Icons.cloud_done : Icons.storage,
+                        color: _useRealData ? Colors.green : Colors.grey,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _useRealData ? 'Données en temps réel' : 'Données locales uniquement',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: _useRealData ? Colors.green[800] : Colors.grey[800],
+                              ),
+                            ),
+                            Text(
+                              _useRealData ? 'Synchronisation Firebase active' : 'Utilisation des données en cache',
+                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _useRealData,
+                        onChanged: (value) {
+                          setState(() => _useRealData = value);
+                        },
+                        activeColor: Colors.green,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Report status card
+              FutureBuilder<DailyReport?>(
             future: equipmentProvider.getTodayReport(),
             builder: (context, snapshot) {
               final todayReport = snapshot.data;
@@ -297,6 +477,8 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
               );
             },
           ),
+        ],
+        ),
         ),
 
         // Month Selector
@@ -454,7 +636,117 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                   },
                 ),
         ),
+
+        // Bouton pour voir les rapports sauvegardés
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _showSavedReports(),
+              icon: const Icon(Icons.folder),
+              label: const Text('VOIR LES RAPPORTS SAUVEGARDÉS'),
+            ),
+          ),
+        ),
       ],
+    );
+  }
+
+  void _showSavedReports() async {
+    final savedReports = await ReportService.listSavedReports();
+    
+    if (!mounted) return;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Rapports sauvegardés',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (savedReports.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Aucun rapport sauvegardé',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Générez un rapport et sauvegardez-le',
+                          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: savedReports.length,
+                    itemBuilder: (context, index) {
+                      final file = savedReports[index];
+                      final fileName = file.path.split('/').last;
+                      return Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                          title: Text(fileName),
+                          subtitle: Text(file.path),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.share, color: Colors.blue),
+                                onPressed: () async {
+                                  await Share.shareXFiles([XFile(file.path)]);
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () async {
+                                  await file.delete();
+                                  Navigator.pop(context);
+                                  _showSavedReports(); // Refresh
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

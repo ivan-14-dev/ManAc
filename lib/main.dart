@@ -118,12 +118,17 @@ class _ManacAppState extends State<ManacApp> {
     final isLoggedIn = _configService.isLoggedIn();
     final hasPin = _configService.hasPinCode();
     
+    // Vérifier si l'utilisateur a déjà vu l'onboarding
+    final hasSeenOnboarding = LocalStorageService.getSetting('has_seen_onboarding', defaultValue: false);
+    
     setState(() {
-      // Si premier lancement (offlineMode pas encore défini), montrer l'intro
-      _showIntro = !isOfflineMode;
-      _showOnboarding = !isOfflineMode;
+      // Désactiver définitivement l'intro et l'onboarding
+      // L'utilisateur peut les voir via les paramètres s'il le souhaite
+      _showIntro = false;
+      _showOnboarding = false;
+      
       // Si déjà connecté ET a un PIN, montrer l'écran de connexion PIN
-      _showPinLogin = isLoggedIn && hasPin && isOfflineMode;
+      _showPinLogin = isLoggedIn && hasPin;
       _isInitialized = true;
     });
   }
@@ -137,28 +142,8 @@ class _ManacAppState extends State<ManacApp> {
 
   // Naviguer vers l'écran approprié
   Widget _getHomeScreen() {
-    // Si premier lancement, montrer l'intro
-    if (_showIntro) {
-      return IntroScreen(
-        onComplete: () {
-          setState(() {
-            _showIntro = false;
-            _showOnboarding = true;
-          });
-        },
-      );
-    }
-    
-    // Après l'intro, montrer l'onboarding (politique de confidentialité)
-    if (_showOnboarding) {
-      return OnboardingScreen(
-        onComplete: () {
-          setState(() {
-            _showOnboarding = false;
-          });
-        },
-      );
-    }
+    // Si premier lancement, montrer l'intro (désactivé maintenant)
+    // L'intro et l'onboarding ont été désactivés
     
     // Si utilisateur connecté avec PIN, montrer l'écran de connexion PIN
     if (_showPinLogin) {
