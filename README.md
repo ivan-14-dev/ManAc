@@ -2,6 +2,13 @@
 
 A comprehensive stock management mobile application for Android and iOS built with Flutter. Features real-time Firebase synchronization with offline support.
 
+## App Screenshots
+
+| | | |
+|:-------------------------:|:-------------------------:|:-------------------------:|
+| <img src="manac/catpture/2b595ec5-929c-4353-9a95-f1875775443b.jpeg" width="200" /> | <img src="manac/catpture/95d4d3f9-637a-4cf0-8ec0-b8e5c38dbb34.jpeg" width="200" /> | <img src="manac/catpture/afba498b-ab24-4526-bb3a-cfaa13151687.jpeg" width="200" /> |
+| <img src="manac/catpture/c25549cf-a6d9-41f6-acc5-833b0bef6968.jpeg" width="200" /> | | |
+
 ## Features
 
 - 📦 **Stock Management**

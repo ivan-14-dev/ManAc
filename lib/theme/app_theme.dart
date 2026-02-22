@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 /// App Theme Configuration - WhatsApp Style
 /// Clean, modern design with teal/green accent like WhatsApp
 class AppTheme {
-  // Primary Colors - WhatsApp Green
+  // Primary Colors - Green
   static const Color primaryOrange = Color(0xFF00A884);
   static const Color primaryOrangeLight = Color(0xFF25D366);
   static const Color primaryOrangeDark = Color(0xFF00897B);
   
-  // Secondary Colors - Same as primary for WhatsApp style
+  // Secondary Colors - Same as primary for style
   static const Color primaryBlue = Color(0xFF00A884);
   static const Color primaryBlueLight = Color(0xFF25D366);
   static const Color primaryBlueDark = Color(0xFF00897B);
@@ -19,12 +19,12 @@ class AppTheme {
   static const Color accentCyan = Color(0xFF00BCD4);
   static const Color accentTeal = Color(0xFF009688);
   
-  // Neutral Colors - Light Mode (WhatsApp style)
+  // Neutral Colors - Light Mode (style)
   static const Color backgroundLight = Color(0xFFFFFFFF);
   static const Color surfaceLight = Color(0xFFF7F8FA);
   static const Color cardLight = Color(0xFFFFFFFF);
   
-  // Neutral Colors - Dark Mode (WhatsApp style)
+  // Neutral Colors - Dark Mode (style)
   static const Color backgroundDark = Color(0xFF121212);
   static const Color surfaceDark = Color(0xFF1E1E1E);
   static const Color cardDark = Color(0xFF2D2D2D);
@@ -79,13 +79,13 @@ class AppTheme {
     );
   }
 
-  // Light Theme - WhatsApp Style
+  // Light Theme -  Style
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       
-      // Color Scheme - WhatsApp Green
+      // Color Scheme - Green
       colorScheme: ColorScheme.light(
         primary: primaryOrange,
         onPrimary: Colors.white,
@@ -101,7 +101,7 @@ class AppTheme {
       // Scaffold Background
       scaffoldBackgroundColor: backgroundLight,
       
-      // AppBar Theme - WhatsApp style
+      // AppBar Theme - style
       appBarTheme: const AppBarTheme(
         backgroundColor: primaryOrange,
         foregroundColor: Colors.white,
@@ -301,13 +301,13 @@ class AppTheme {
     );
   }
 
-  // Dark Theme - WhatsApp Dark Style
+  // Dark Theme - Dark Style
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       
-      // Color Scheme - WhatsApp Green in Dark
+      // Color Scheme - Green in Dark
       colorScheme: ColorScheme.dark(
         primary: primaryOrange,
         onPrimary: Colors.white,

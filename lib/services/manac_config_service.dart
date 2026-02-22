@@ -49,6 +49,16 @@ class ManacConfigService {
     return await _prefs?.setString('local_api_url', url) ?? false;
   }
 
+  /// Save local API enabled state
+  Future<bool> setLocalApiEnabled(bool enabled) async {
+    return await _prefs?.setBool('local_api_enabled', enabled) ?? false;
+  }
+
+  /// Get custom local API enabled state
+  bool getLocalApiEnabled() {
+    return _prefs?.getBool('local_api_enabled') ?? localApiEnabled;
+  }
+
   /// Get custom or default local API URL
   String getLocalApiUrl() {
     return _prefs?.getString('local_api_url') ?? localApiUrl;
