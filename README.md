@@ -4,10 +4,14 @@ A comprehensive stock management mobile application for Android and iOS built wi
 
 ## App Screenshots
 
-| | | |
-|:-------------------------:|:-------------------------:|:-------------------------:|
-| <img src="manac/catpture/2b595ec5-929c-4353-9a95-f1875775443b.jpeg" width="200" /> | <img src="manac/catpture/95d4d3f9-637a-4cf0-8ec0-b8e5c38dbb34.jpeg" width="200" /> | <img src="manac/catpture/afba498b-ab24-4526-bb3a-cfaa13151687.jpeg" width="200" /> |
-| <img src="manac/catpture/c25549cf-a6d9-41f6-acc5-833b0bef6968.jpeg" width="200" /> | | |
+![95d4d3f9-637a-4cf0-8ec0-b8e5c38dbb34](https://github.com/user-attachments/assets/899be76d-5608-401f-ae68-251e024145a3)
+
+![afba498b-ab24-4526-bb3a-cfaa13151687](https://github.com/user-attachments/assets/48350eb2-6b12-47fe-af67-4596a0dc3efe)
+![c25549cf-a6d9-41f6-acc5-833b0bef6968](https://github.com/user-attachments/assets/18e68172-be85-4a16-83b9-edfb183c7a02)
+
+![2b595ec5-929c-4353-9a95-f1875775443b](https://github.com/user-attachments/assets/02128a0b-d5da-4809-b11a-b8213a754724)
+
+
 
 ## Features
 
