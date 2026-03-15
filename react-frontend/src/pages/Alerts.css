@@ -1,0 +1,187 @@
+.alerts-page {
+  padding: 20px;
+}
+
+.alerts-page .page-header {
+  margin-bottom: 24px;
+}
+
+.alerts-page h1 {
+  color: #1a1a2e;
+  font-size: 24px;
+}
+
+.no-alerts {
+  text-align: center;
+  padding: 80px 20px;
+  background: white;
+  border-radius: 16px;
+}
+
+.no-alerts svg {
+  color: #4CAF50;
+  margin-bottom: 24px;
+}
+
+.no-alerts h2 {
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.no-alerts p {
+  color: #666;
+}
+
+.alerts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.alert-section {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.section-header svg {
+  color: #FF9800;
+}
+
+.section-header h2 {
+  color: #1a1a2e;
+  font-size: 16px;
+  flex: 1;
+}
+
+.section-header .count {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.section-header .count.pending {
+  background: #FFF3E0;
+  color: #FF9800;
+}
+
+.section-header .count.low-stock {
+  background: #FFEBEE;
+  color: #EF5350;
+}
+
+.alert-list {
+  padding: 12px;
+}
+
+.alert-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+}
+
+.alert-card:last-child {
+  margin-bottom: 0;
+}
+
+.alert-card:hover {
+  background: #f8f9fa;
+}
+
+.alert-card.pending {
+  border-left: 4px solid #FF9800;
+}
+
+.alert-card.low-stock {
+  border-left: 4px solid #EF5350;
+}
+
+.alert-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-card.pending .alert-icon {
+  background: rgba(255, 152, 0, 0.15);
+  color: #FF9800;
+}
+
+.alert-card.low-stock .alert-icon {
+  background: rgba(239, 83, 80, 0.15);
+  color: #EF5350;
+}
+
+.alert-info {
+  flex: 1;
+}
+
+.alert-info h4 {
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.alert-info p {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.alert-info .quantity {
+  font-size: 12px;
+  color: #999;
+}
+
+.btn-return, .btn-view {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.btn-return {
+  background: #4CAF50;
+  color: white;
+}
+
+.btn-return:hover {
+  background: #43A047;
+}
+
+.btn-view {
+  background: #2196F3;
+  color: white;
+}
+
+.btn-view:hover {
+  background: #1E88E5;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px;
+  color: #666;
+}

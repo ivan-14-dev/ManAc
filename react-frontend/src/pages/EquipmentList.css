@@ -1,0 +1,210 @@
+.equipment-page {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: #212121;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00A884 0%, #00897B 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 168, 132, 0.4);
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  background: white;
+  padding: 1.25rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.filters select,
+.filters button {
+  padding: 0.75rem 1rem;
+  border: 2px solid #E8E8E8;
+  border-radius: 12px;
+  background: white;
+  font-size: 0.875rem;
+  flex: 1;
+  min-width: 140px;
+  color: #212121;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.filters select:focus {
+  border-color: #00A884;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.15);
+}
+
+.filters select:hover {
+  border-color: #bdbdbd;
+}
+
+.filters select::placeholder {
+  color: #999;
+}
+
+.filters select option {
+  color: #212121;
+  background: white;
+}
+
+.filters button {
+  background: linear-gradient(135deg, #00A884 0%, #00897B 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.filters button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 168, 132, 0.4);
+}
+
+.equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.equipment-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s;
+}
+
+.equipment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.equipment-info h3 {
+  margin: 0 0 0.5rem 0;
+  color: #212121;
+  font-weight: 600;
+}
+
+.equipment-info p {
+  margin: 0.25rem 0;
+  color: #667781;
+  font-size: 0.875rem;
+}
+
+.equipment-stats {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #E8E8E8;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status.available {
+  background: #E8F5E9;
+  color: #00A884;
+}
+
+.status.checked_out {
+  background: #FFF8E1;
+  color: #F57C00;
+}
+
+.status.maintenance {
+  background: #FFEBEE;
+  color: #EF5350;
+}
+
+.status.retired {
+  background: #F5F5F5;
+  color: #667781;
+}
+
+.quantity {
+  margin: 0.5rem 0;
+  font-weight: 600;
+  color: #212121;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.actions button {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid #E8E8E8;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  font-weight: 500;
+  color: #212121;
+  transition: all 0.2s;
+}
+
+.actions button:hover {
+  border-color: #00A884;
+  color: #00A884;
+}
+
+.btn-danger {
+  color: #EF5350;
+}
+
+.btn-danger:hover {
+  border-color: #EF5350;
+  background: #FFEBEE;
+}
+
+.no-data {
+  text-align: center;
+  color: #667781;
+  padding: 2rem;
+  background: white;
+  border-radius: 16px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  font-size: 1rem;
+  color: #667781;
+}
