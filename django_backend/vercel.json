@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "manac/wsgi.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "15mb" }
+    },
+    {
+      "src": "requirements.txt",
+      "use": "pip",
+      "criteria": "always"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "manac/wsgi.py"
+    }
+  ]
+}
