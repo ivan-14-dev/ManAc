@@ -19,6 +19,8 @@ def frontend_view(request):
         os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'react-frontend', 'dist', 'index.html'),
         os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'react-frontend', 'dist', 'index.html'),
         '/var/task/react-frontend/dist/index.html',
+        '/var/task/dist/index.html',
+        '/var/task/react-frontend/dist/index.html',
     ]
     
     for build_path in possible_paths:
@@ -41,7 +43,8 @@ def serve_static(request, path):
     possible_paths = [
         os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'react-frontend', 'dist', path),
         os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'react-frontend', 'dist', path),
-        os.path.join('/var/task/react-frontend/dist', path),
+        '/var/task/react-frontend/dist/' + path,
+        '/var/task/dist/' + path,
     ]
     
     for file_path in possible_paths:
