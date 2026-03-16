@@ -10,13 +10,15 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-@m2n3(5*35jzg!bx!nj(cb)e3l#off5rgy@7iqd6@o75p7=3b8')
+SECRET_KEY = os.getenv('SECRET_KEY') or os.getenv('manac_SECRET_KEY', 'django-insecure-@m2n3(5*35jzg!bx!nj(cb)e3l#off5rgy@7iqd6@o75p7=3b8')
 
 # Detect production environment
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+debug_env = os.getenv('DEBUG') or os.getenv('manac_DEBUG', 'False')
+DEBUG = debug_env.lower() == 'true'
 
 # Allow Vercel domains
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+allowed_hosts_env = os.getenv('ALLOWED_HOSTS') or os.getenv('manac_ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = allowed_hosts_env.split(',') if allowed_hosts_env else ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -75,6 +77,11 @@ if os.getenv('DATABASE_URL'):
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.parse(os.getenv('DATABASE_URL'))
+    }
+elif os.getenv('manac_DATABASE_URL'):
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(os.getenv('manac_DATABASE_URL'))
     }
 else:
     DATABASES = {
@@ -138,14 +145,18 @@ REST_FRAMEWORK = {
 }
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:8081",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8081",
-    "https://man-ac.vercel.app",
-    "https://manac.vercel.app",
-]
+cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if cors_origins_env:
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',')]
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://localhost:8081",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8081",
+        "https://man-ac.vercel.app",
+        "https://manac.vercel.app",
+    ]
 CORS_ALLOW_CREDENTIALS = True
 
 # Email settings
