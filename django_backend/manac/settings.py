@@ -12,9 +12,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-@m2n3(5*35jzg!bx!nj(cb)e3l#off5rgy@7iqd6@o75p7=3b8')
 
-DEBUG = True
+# Detect production environment
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']
+# Allow Vercel domains
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -134,6 +136,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8081",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8081",
+    "https://man-ac.vercel.app",
+    "https://manac.vercel.app",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
