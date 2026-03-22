@@ -23,13 +23,16 @@ const Dashboard = () => {
     try {
       // Build filters based on user role
       const equipmentParams = {};
+      const borrowingsParams = {};
+      
       if (isDepartmentAdmin && user?.department) {
         equipmentParams.department = user.department;
+        borrowingsParams.department = user.department;
       }
       
       const [equipmentRes, borrowingsRes, departmentsRes] = await Promise.all([
         equipmentAPI.list(equipmentParams),
-        borrowingsAPI.list({ status: 'pending' }),
+        borrowingsAPI.list({ ...borrowingsParams, status: 'pending' }),
         departmentsAPI.list(),
       ]);
 

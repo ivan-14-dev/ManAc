@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { borrowingsAPI, equipmentAPI } from '../api';
-import { History, Search, Filter, CheckCircle, XCircle, Clock, Package, ArrowRight, RefreshCw } from 'lucide-react';
+import { History, Search, Filter, CheckCircle, XCircle, Clock, Package, ArrowRight, RefreshCw, Download, FileText } from 'lucide-react';
 import { toast } from 'react-toastify';
 import './Borrowings.css';
 
@@ -117,6 +117,40 @@ const Borrowings = () => {
     }
   };
 
+  const handleExportCSV = async () => {
+    try {
+      const response = await borrowingsAPI.exportCSV();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `emprunts_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Export CSV téléchargé avec succès!');
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast.error('Erreur lors de l\'export CSV');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      const response = await borrowingsAPI.exportPDF();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `emprunts_${new Date().toISOString().split('T')[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Export PDF téléchargé avec succès!');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Erreur lors de l\'export PDF');
+    }
+  };
+
   const getStatusBadge = (status) => {
     const statusConfig = {
       pending: { label: 'En attente', class: 'pending', icon: Clock },
@@ -154,10 +188,22 @@ const Borrowings = () => {
     <div className="borrowings-page">
       <div className="page-header">
         <h1>Gestion des Emprunts</h1>
-        <button className="btn-primary" onClick={() => navigate('/checkout')}>
-          <Package size={18} />
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn-secondary" onClick={handleExportCSV} title="Exporter en CSV">
+            <Download size={18} />
+            CSV
+          </button>
+          {isAdmin && (
+            <button className="btn-secondary" onClick={handleExportPDF} title="Exporter en PDF">
+              <FileText size={18} />
+              PDF
+            </button>
+          )}
+          <button className="btn-primary" onClick={() => navigate('/checkout')}>
+            <Package size={18} />
           Nouvel Emprunt
-        </button>
+          </button>
+        </div>
       </div>
 
       {/* Stats */}

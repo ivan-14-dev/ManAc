@@ -32,12 +32,14 @@ INSTALLED_APPS = [
     # Third party
     'rest_framework',
     'corsheaders',
+    'django_filters',
     
     # Local apps
     'accounts',
     'departments',
     'equipment',
     'borrowings',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -151,8 +153,10 @@ if cors_origins_env:
 else:
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:3000",
+        "http://localhost:3001",
         "http://localhost:8081",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
         "http://127.0.0.1:8081",
         "https://man-ac.vercel.app",
         "https://manac.vercel.app",

@@ -24,6 +24,41 @@ class UserCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email', 'password', 'first_name', 
                   'last_name', 'role', 'department', 'phone']
     
+    def validate_role(self, value):
+        """Validate that the role doesn't exceed the current user's role"""
+        request = self.context.get('request')
+        if not request or not request.user:
+            raise serializers.ValidationError("Authentication required")
+        
+        user = request.user
+        # Define role hierarchy: general_admin > department_admin > user
+        role_hierarchy = {'general_admin': 3, 'department_admin': 2, 'user': 1}
+        
+        user_role_level = role_hierarchy.get(user.role, 0)
+        requested_role_level = role_hierarchy.get(value, 0)
+        
+        if requested_role_level > user_role_level:
+            raise serializers.ValidationError(
+                f"You cannot assign a role higher than your own ({user.get_role_display()})"
+            )
+        
+        return value
+    
+    def validate_department(self, value):
+        """Validate department assignment for department admins"""
+        request = self.context.get('request')
+        if not request or not request.user:
+            raise serializers.ValidationError("Authentication required")
+        
+        user = request.user
+        # Department admins can only assign users to their own department
+        if user.is_department_admin and value != user.department:
+            raise serializers.ValidationError(
+                "You can only assign users to your own department"
+            )
+        
+        return value
+    
     def create(self, validated_data):
         password = validated_data.pop('password')
         user = User(**validated_data)
@@ -37,6 +72,41 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         model = User
         fields = ['first_name', 'last_name', 'email', 'role', 
                   'department', 'phone', 'avatar', 'is_active']
+    
+    def validate_role(self, value):
+        """Validate that the role doesn't exceed the current user's role"""
+        request = self.context.get('request')
+        if not request or not request.user:
+            raise serializers.ValidationError("Authentication required")
+        
+        user = request.user
+        # Define role hierarchy: general_admin > department_admin > user
+        role_hierarchy = {'general_admin': 3, 'department_admin': 2, 'user': 1}
+        
+        user_role_level = role_hierarchy.get(user.role, 0)
+        requested_role_level = role_hierarchy.get(value, 0)
+        
+        if requested_role_level > user_role_level:
+            raise serializers.ValidationError(
+                f"You cannot assign a role higher than your own ({user.get_role_display()})"
+            )
+        
+        return value
+    
+    def validate_department(self, value):
+        """Validate department assignment for department admins"""
+        request = self.context.get('request')
+        if not request or not request.user:
+            raise serializers.ValidationError("Authentication required")
+        
+        user = request.user
+        # Department admins can only assign users to their own department
+        if user.is_department_admin and value != user.department:
+            raise serializers.ValidationError(
+                "You can only assign users to your own department"
+            )
+        
+        return value
 
 
 class ChangePasswordSerializer(serializers.Serializer):

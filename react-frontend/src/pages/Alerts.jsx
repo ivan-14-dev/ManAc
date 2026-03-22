@@ -20,21 +20,32 @@ const Alerts = () => {
     try {
       setLoading(true);
       
-      // Build department filter for department admin
-      const deptFilter = isDepartmentAdmin && user?.department ? { department: user.department } : {};
+      let borrowingsData;
       
-      // Get pending/active borrowings
-      const borrowingsRes = await borrowingsAPI.list({ status: 'checked_out', ...deptFilter });
-      const borrowingsData = borrowingsRes.data.results || borrowingsRes.data;
+      if (!isAdmin) {
+        // Regular users only see their own borrowings
+        const myBorrowingsRes = await borrowingsAPI.myBorrowings();
+        const myBorrowings = myBorrowingsRes.data.results || myBorrowingsRes.data;
+        // Filter to only checked_out items
+        borrowingsData = myBorrowings.filter(b => b.status === 'checked_out');
+      } else {
+        // Admins see all checked_out borrowings filtered by department
+        const deptFilter = isDepartmentAdmin && user?.department ? { department: user.department } : {};
+        const borrowingsRes = await borrowingsAPI.list({ status: 'checked_out', ...deptFilter });
+        borrowingsData = borrowingsRes.data.results || borrowingsRes.data;
+      }
+      
       setPendingReturns(borrowingsData);
 
-      // Get equipment filtered by department
-      const equipmentRes = await equipmentAPI.list(deptFilter);
-      const equipmentData = equipmentRes.data.results || equipmentRes.data;
-      
-      // Filter low stock (less than 2 available)
-      const lowStockItems = equipmentData.filter(e => e.available_quantity < 2 && e.available_quantity > 0);
-      setLowStock(lowStockItems);
+      // Get equipment filtered by department (only for admins)
+      if (isAdmin) {
+        const equipmentRes = await equipmentAPI.list(deptFilter);
+        const equipmentData = equipmentRes.data.results || equipmentRes.data;
+        
+        // Filter low stock (less than 2 available)
+        const lowStockItems = equipmentData.filter(e => e.available_quantity < 2 && e.available_quantity > 0);
+        setLowStock(lowStockItems);
+      }
     } catch (error) {
       console.error('Error loading alerts:', error);
     } finally {
@@ -69,7 +80,7 @@ const Alerts = () => {
         </div>
       ) : (
         <div className="alerts-container">
-          {/* Pending Returns */}
+          {/* Pending Returns - Show for all users but data is filtered by role */}
           {pendingReturns.length > 0 && (
             <div className="alert-section">
               <div className="section-header">
@@ -100,8 +111,8 @@ const Alerts = () => {
             </div>
           )}
 
-          {/* Low Stock */}
-          {lowStock.length > 0 && (
+          {/* Low Stock - Only visible to admins */}
+          {isAdmin && lowStock.length > 0 && (
             <div className="alert-section">
               <div className="section-header">
                 <Box size={24} />

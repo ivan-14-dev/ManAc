@@ -57,6 +57,8 @@ export const equipmentAPI = {
   delete: (id) => api.delete(`/api/equipment/${id}/`),
   available: () => api.get('/api/equipment/available/'),
   history: (id) => api.get(`/api/equipment/${id}/history/`),
+  exportCSV: () => api.get('/api/equipment/export_csv/', { responseType: 'blob' }),
+  exportPDF: () => api.get('/api/equipment/export_pdf/', { responseType: 'blob' }),
 };
 
 // Borrowings API
@@ -73,6 +75,8 @@ export const borrowingsAPI = {
   myBorrowings: () => api.get('/api/borrowings/my_borrowings/'),
   pending: () => api.get('/api/borrowings/pending/'),
   overdue: () => api.get('/api/borrowings/overdue/'),
+  exportCSV: () => api.get('/api/borrowings/export_csv/', { responseType: 'blob' }),
+  exportPDF: () => api.get('/api/borrowings/export_pdf/', { responseType: 'blob' }),
 };
 
 // Users API

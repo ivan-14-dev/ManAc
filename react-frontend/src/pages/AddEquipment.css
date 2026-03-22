@@ -58,6 +58,8 @@
 
 .form-group {
   margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .form-group:last-child {
@@ -70,6 +72,7 @@
   font-weight: 500;
   margin-bottom: 8px;
   font-size: 14px;
+  min-height: 20px;
 }
 
 .form-group input,
@@ -95,9 +98,15 @@
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  align-items: end;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Entry Form */
@@ -125,6 +134,30 @@
 
 .btn-add-entry:hover {
   background: #43A047;
+}
+
+.btn-add-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 16px;
+  background: #00A884;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.btn-add-small:hover {
+  background: #00896b;
+}
+
+.btn-add-small:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 /* Entries List */

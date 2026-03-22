@@ -2,20 +2,20 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { equipmentAPI, departmentsAPI } from '../api';
-import { Package, Plus, Edit, Trash2 } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, Download, FileText } from 'lucide-react';
 import { toast } from 'react-toastify';
 import './EquipmentList.css';
 
 const EquipmentList = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isDepartmentAdmin, user } = useAuth();
   const [equipment, setEquipment] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     category: '',
     status: '',
-    department: '',
+    department: isDepartmentAdmin && user?.department ? user.department : '',
   });
 
   useEffect(() => {
@@ -73,6 +73,40 @@ const EquipmentList = () => {
     }
   };
 
+  const handleExportCSV = async () => {
+    try {
+      const response = await equipmentAPI.exportCSV();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `equipements_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Export CSV téléchargé avec succès!');
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast.error('Erreur lors de l\'export CSV');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      const response = await equipmentAPI.exportPDF();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `equipements_${new Date().toISOString().split('T')[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Export PDF téléchargé avec succès!');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Erreur lors de l\'export PDF');
+    }
+  };
+
   if (loading) {
     return <div className="loading">Chargement...</div>;
   }
@@ -81,12 +115,24 @@ const EquipmentList = () => {
     <div className="equipment-page">
       <div className="page-header">
         <h1>Équipements</h1>
-        {isAdmin && (
-          <button className="btn-primary" onClick={() => navigate('/equipment/add')}>
-            <Plus size={18} />
-            Ajouter
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {isAdmin && (
+            <>
+              <button className="btn-secondary" onClick={handleExportCSV} title="Exporter en CSV">
+                <Download size={18} />
+                CSV
+              </button>
+              <button className="btn-secondary" onClick={handleExportPDF} title="Exporter en PDF">
+                <FileText size={18} />
+                PDF
+              </button>
+              <button className="btn-primary" onClick={() => navigate('/equipment/add')}>
+                <Plus size={18} />
+                Ajouter
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <form className="filters" onSubmit={handleFilterSubmit}>
@@ -112,9 +158,14 @@ const EquipmentList = () => {
           <option value="retired">Retiré</option>
         </select>
 
-        <select name="department" value={filters.department} onChange={handleFilterChange}>
-          <option value="">Tous les départements</option>
-          {departments && departments.map(dept => (
+        <select 
+          name="department" 
+          value={filters.department} 
+          onChange={handleFilterChange}
+          disabled={isDepartmentAdmin}
+        >
+          <option value="">{isDepartmentAdmin ? user?.department_name || 'Votre département' : 'Tous les départements'}</option>
+          {!isDepartmentAdmin && departments && departments.map(dept => (
             <option key={dept.id} value={dept.id}>{dept.name}</option>
           ))}
         </select>

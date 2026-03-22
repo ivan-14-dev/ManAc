@@ -8,7 +8,7 @@ import './AddEquipment.css';
 
 const AddEquipment = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isDepartmentAdmin, user } = useAuth();
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [entries, setEntries] = useState([]);
@@ -29,7 +29,7 @@ const AddEquipment = () => {
     location: '',
   });
 
-  const categories = [
+  const defaultCategories = [
     'Computer',
     'Monitor',
     'Keyboard',
@@ -43,6 +43,10 @@ const AddEquipment = () => {
     'Other',
   ];
 
+  const [categories, setCategories] = useState(defaultCategories);
+  const [newCategory, setNewCategory] = useState('');
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+
   useEffect(() => {
     loadDepartments();
   }, []);
@@ -50,10 +54,20 @@ const AddEquipment = () => {
   const loadDepartments = async () => {
     try {
       const response = await departmentsAPI.list();
-      const data = response.data.results || response.data;
+      let data = response.data.results || response.data;
+      
+      // Filter departments for department admin - only show their own department
+      if (isDepartmentAdmin && user?.department) {
+        data = data.filter(d => d.id === user.department);
+      }
+      
       setDepartments(data);
       if (data.length > 0) {
-        setFormData(prev => ({ ...prev, department: data[0].id }));
+        // If department admin, force their department
+        const defaultDept = isDepartmentAdmin && user?.department 
+          ? user.department 
+          : data[0].id;
+        setFormData(prev => ({ ...prev, department: defaultDept }));
       }
     } catch (error) {
       console.error('Error loading departments:', error);
@@ -65,6 +79,26 @@ const AddEquipment = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleAddNewCategory = () => {
+    if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+      const categoryToAdd = newCategory.trim();
+      setCategories([...categories, categoryToAdd]);
+      setFormData({ ...formData, category: categoryToAdd });
+      setNewCategory('');
+      setShowNewCategoryInput(false);
+    }
+  };
+
+  const handleCategoryChange = (e) => {
+    if (e.target.value === '__new__') {
+      setShowNewCategoryInput(true);
+      setFormData({ ...formData, category: '' });
+    } else {
+      setShowNewCategoryInput(false);
+      setFormData({ ...formData, category: e.target.value });
+    }
   };
 
   const handleImageChange = (e) => {
@@ -184,17 +218,42 @@ const AddEquipment = () => {
           <div className="form-row">
             <div className="form-group">
               <label>Catégorie *</label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Sélectionner une catégorie</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+              {showNewCategoryInput ? (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    placeholder="Nouvelle catégorie"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddNewCategory}
+                    className="btn-add-small"
+                    disabled={!newCategory.trim()}
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleCategoryChange}
+                    required
+                    style={{ flex: 1 }}
+                  >
+                    <option value="">Sélectionner une catégorie</option>
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="__new__" disabled>────────────────</option>
+                    <option value="__new__">+ Nouvelle catégorie</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -204,6 +263,7 @@ const AddEquipment = () => {
                 value={formData.department}
                 onChange={handleInputChange}
               >
+                <option value="">Sélectionner un département</option>
                 {departments.map(dept => (
                   <option key={dept.id} value={dept.id}>{dept.name}</option>
                 ))}

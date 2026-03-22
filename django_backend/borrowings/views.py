@@ -249,3 +249,101 @@ class BorrowingViewSet(viewsets.ModelViewSet):
         )
         serializer = BorrowingSerializer(overdue, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def export_csv(self, request):
+        """Export borrowings to CSV format - Admin only"""
+        if not request.user.is_admin:
+            return Response(
+                {'error': 'Only admins can export borrowings'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        import csv
+        from django.http import HttpResponse
+        
+        borrowings = self.get_queryset()
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="emprunts_{timezone.now().strftime("%Y%m%d")}.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'Référence', 'Équipement', 'Emprunteur', 'CNI', 'Email', 'Salle', 'Quantité', 'Statut', 'Date demande', 'Date approbation', 'Date retrait', 'Date retour prévue', 'Date retour effectif'])
+        
+        for b in borrowings:
+            writer.writerow([
+                b.id,
+                b.reference_number,
+                b.equipment.name if b.equipment else '',
+                b.borrower_name,
+                b.borrower_cni,
+                b.borrower_email,
+                b.destination_room,
+                b.quantity,
+                b.status,
+                b.request_date.strftime('%Y-%m-%d %H:%M') if b.request_date else '',
+                b.approval_date.strftime('%Y-%m-%d %H:%M') if b.approval_date else '',
+                b.checkout_date.strftime('%Y-%m-%d %H:%M') if b.checkout_date else '',
+                b.expected_return_date.strftime('%Y-%m-%d') if b.expected_return_date else '',
+                b.actual_return_date.strftime('%Y-%m-%d %H:%M') if b.actual_return_date else '',
+            ])
+        
+        return response
+    
+    @action(detail=False, methods=['get'])
+    def export_pdf(self, request):
+        """Export borrowings to PDF format - Admin only"""
+        if not request.user.is_admin:
+            return Response(
+                {'error': 'Only admins can export borrowings'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        from fpdf import FPDF
+        from django.http import HttpResponse
+        
+        borrowings = self.get_queryset()
+        
+        class PDF(FPDF):
+            def header(self):
+                self.set_font('helvetica', 'B', 15)
+                self.cell(0, 10, 'Rapport des Emprunts - ManAC', 0, True, 'C')
+                self.ln(5)
+            
+            def footer(self):
+                self.set_y(-15)
+                self.set_font('helvetica', 'I', 8)
+                self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+        
+        pdf = PDF()
+        pdf.add_page()
+        pdf.set_font('helvetica', 'B', 10)
+        
+        # Table header
+        pdf.set_fill_color(200, 220, 255)
+        headers = ['Ref.', 'Equipement', 'Emprunteur', 'Salle', 'Qte', 'Statut', 'Date']
+        col_widths = [25, 45, 45, 25, 12, 25, 30]
+        
+        for i, header in enumerate(headers):
+            pdf.cell(col_widths[i], 10, header, 1, 0, 'C', True)
+        pdf.ln()
+        
+        # Table rows
+        pdf.set_font('helvetica', '', 8)
+        for b in borrowings:
+            pdf.cell(col_widths[0], 8, str(b.reference_number)[:10], 1)
+            pdf.cell(col_widths[1], 8, (b.equipment.name if b.equipment else '')[:20], 1)
+            pdf.cell(col_widths[2], 8, (b.borrower_name if b.borrower_name else '')[:20], 1)
+            pdf.cell(col_widths[3], 8, (b.destination_room if b.destination_room else '')[:10], 1)
+            pdf.cell(col_widths[4], 8, str(b.quantity), 1, 0, 'C')
+            pdf.cell(col_widths[5], 8, b.status[:10], 1)
+            pdf.cell(col_widths[6], 8, b.request_date.strftime('%d/%m/%y') if b.request_date else '', 1)
+            pdf.ln()
+        
+        # Summary
+        pdf.ln(10)
+        pdf.set_font('helvetica', 'B', 10)
+        pdf.cell(0, 10, f'Total des emprunts: {len(borrowings)}', 0, True)
+        pdf.cell(0, 10, f'Genere le: {timezone.now().strftime("%d/%m/%Y a %H:%M")}', 0, True)
+        
+        response = HttpResponse(pdf.output(dest='S').encode('latin-1'), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="emprunts_{timezone.now().strftime("%Y%m%d")}.pdf"'
+        return response

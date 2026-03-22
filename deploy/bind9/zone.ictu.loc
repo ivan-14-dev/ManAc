@@ -1,0 +1,37 @@
+; Bind9 Zone Configuration for ictu.loc
+; Add this to /etc/bind/named.conf.local:
+; zone "ictu.loc" {
+;     type master;
+;     file "/etc/bind/zones/zone.ictu.loc";
+;     allow-transfer { any; };
+; };
+
+$TTL    604800
+@       IN      SOA     ns1.ictu.loc. admin.ictu.loc. (
+                     2203220001         ; Serial (YYYYMMDDNN)
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+
+; Name servers
+@       IN      NS      ns1.ictu.loc.
+@       IN      NS      ns2.ictu.loc.
+
+; A records for name servers
+ns1     IN      A       192.168.1.10    ; Change to your server IP
+ns2     IN      A       192.168.1.10    ; Change to your server IP
+
+; ManAC Application Records
+; Frontend: http://manac.ictu.loc
+manac   IN      A       192.168.1.10    ; Change to your server IP
+
+; Backend: http://manac_backend.ictu.loc
+manac_backend IN A     192.168.1.10    ; Change to your server IP
+
+; Optional: Add CNAME records
+; www     IN      CNAME   manac
+; api     IN      CNAME   manac_backend
+
+; IPv6 records (if needed)
+; @       IN      AAAA    ::1

@@ -11,6 +11,7 @@ from accounts.auth_views import login_view, logout_view, current_user_view
 from departments.views import DepartmentViewSet
 from equipment.views import EquipmentViewSet
 from borrowings.views import BorrowingViewSet
+from core.views import ActivityViewSet, StockItemViewSet, StockMovementViewSet, DailyReportViewSet
 
 
 def frontend_view(request):
@@ -69,6 +70,10 @@ def api_root(request):
             'departments': '/api/departments/',
             'equipment': '/api/equipment/',
             'borrowings': '/api/borrowings/',
+            'activities': '/api/activities/',
+            'stock': '/api/stock/',
+            'stock-movements': '/api/stock-movements/',
+            'reports': '/api/reports/',
         }
     })
 
@@ -78,6 +83,10 @@ router.register(r'users', UserViewSet)
 router.register(r'departments', DepartmentViewSet)
 router.register(r'equipment', EquipmentViewSet)
 router.register(r'borrowings', BorrowingViewSet)
+router.register(r'activities', ActivityViewSet)
+router.register(r'stock', StockItemViewSet)
+router.register(r'stock-movements', StockMovementViewSet)
+router.register(r'reports', DailyReportViewSet)
 
 urlpatterns = [
     path('', frontend_view, name='frontend'),
