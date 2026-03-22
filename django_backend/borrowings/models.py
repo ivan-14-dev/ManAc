@@ -74,19 +74,41 @@ class Borrowing(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.reference_number:
-            # Generate unique reference number: EMP-YYYYMMDD-XXXX
-            today = timezone.now().strftime('%Y%m%d')
+            # Generate unique reference number: EMP-YYYYMMDDHHXX
+            # Format: EMP-2026031020AU where:
+            # - EMP = prefix for Emprunt
+            # - 20260310 = date (YYYYMMDD)
+            # - 20 = hour (HH)
+            # - AU = initials of user (first letter of first name + last name)
+            now = timezone.now()
+            date_str = now.strftime('%Y%m%d%H')  # YYYYMMDDHH
+            
+            # Get user initials for the reference
+            # Use borrower's initials (first letter of first name + last name)
+            if self.borrower:
+                first_initial = self.borrower.first_name[0].upper() if self.borrower.first_name else 'X'
+                last_initial = self.borrower.last_name[0].upper() if self.borrower.last_name else self.borrower.username[0].upper()
+                user_initials = f'{first_initial}{last_initial}'
+            else:
+                user_initials = 'XX'
+            
+            # Find last borrowing for this hour to increment counter
+            prefix = f'EMP-{date_str}{user_initials}'
             last_borrowing = Borrowing.objects.filter(
-                reference_number__startswith=f'EMP-{today}'
+                reference_number__startswith=prefix
             ).order_by('-reference_number').first()
             
             if last_borrowing:
-                last_num = int(last_borrowing.reference_number.split('-')[-1])
-                new_num = last_num + 1
+                # Extract the counter and increment
+                try:
+                    last_num = int(last_borrowing.reference_number.split('-')[-1])
+                    new_num = last_num + 1
+                except (ValueError, IndexError):
+                    new_num = 1
             else:
                 new_num = 1
             
-            self.reference_number = f'EMP-{today}-{new_num:04d}'
+            self.reference_number = f'EMP-{date_str}{user_initials}-{new_num:02d}'
         
         super().save(*args, **kwargs)
 
