@@ -1,0 +1,22 @@
+[Unit]
+Description=ManAC uWSGI Application
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/media/eye-of-god/IVAN/script/common/Mobile/Managements/ManAc/django_backend
+Environment="PATH=/media/eye-of-god/IVAN/script/common/Mobile/Managements/ManAc/django_backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/local/bin/uwsgi --ini /media/eye-of-god/IVAN/script/common/Mobile/Managements/ManAc/deploy/uwsgi/manac_uwsgi.ini
+ExecReload=/bin/kill -s HUP $MAINPID
+KillSignal=SIGTERM
+Restart=on-failure
+RestartSec=5
+
+# Socket directory
+RuntimeDirectory=uwsgi
+RuntimeDirectoryMode=0755
+
+[Install]
+WantedBy=multi-user.target
