@@ -5,7 +5,7 @@ import { Package, ArrowLeftRight, Building2, CheckCircle, Clock, XCircle } from 
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user, isGeneralAdmin } = useAuth();
+  const { user, isGeneralAdmin, isDepartmentAdmin } = useAuth();
   const [stats, setStats] = useState({
     totalEquipment: 0,
     availableEquipment: 0,
@@ -17,27 +17,42 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [user]);
 
   const loadDashboardData = async () => {
     try {
+      // Build filters based on user role
+      const equipmentParams = {};
+      if (isDepartmentAdmin && user?.department) {
+        equipmentParams.department = user.department;
+      }
+      
       const [equipmentRes, borrowingsRes, departmentsRes] = await Promise.all([
-        equipmentAPI.list(),
-        borrowingsAPI.pending(),
+        equipmentAPI.list(equipmentParams),
+        borrowingsAPI.list({ status: 'pending' }),
         departmentsAPI.list(),
       ]);
 
       const equipment = equipmentRes.data.results || equipmentRes.data;
-      const borrowings = borrowingsRes.data;
+      const borrowings = borrowingsRes.data.results || borrowingsRes.data;
+
+      // Filter borrowings by department for department admin
+      let filteredBorrowings = borrowings;
+      if (isDepartmentAdmin && user?.department) {
+        filteredBorrowings = borrowings.filter(b => 
+          b.equipment_department === user.department || 
+          !b.equipment_department
+        );
+      }
 
       setStats({
         totalEquipment: equipment.length,
         availableEquipment: equipment.filter(e => e.status === 'available').length,
-        pendingBorrowings: borrowings.length,
-        totalDepartments: departmentsRes.data.length,
+        pendingBorrowings: filteredBorrowings.length,
+        totalDepartments: isGeneralAdmin ? departmentsRes.data.length : 1,
       });
 
-      setRecentBorrowings(borrowings.slice(0, 5));
+      setRecentBorrowings(filteredBorrowings.slice(0, 5));
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
@@ -50,8 +65,21 @@ const Dashboard = () => {
       case 'pending': return <Clock size={16} />;
       case 'approved': return <CheckCircle size={16} />;
       case 'rejected': return <XCircle size={16} />;
+      case 'checked_out': return <ArrowRight size={16} />;
+      case 'returned': return <CheckCircle size={16} />;
       default: return <Clock size={16} />;
     }
+  };
+
+  const getStatusLabel = (status) => {
+    const statusLabels = {
+      pending: 'En attente',
+      approved: 'Approuvé',
+      rejected: 'Rejeté',
+      checked_out: 'Emprunté',
+      returned: 'Retourné',
+    };
+    return statusLabels[status] || status;
   };
 
   if (loading) {
@@ -110,7 +138,7 @@ const Dashboard = () => {
       </div>
 
       <div className="recent-section">
-        <h2>Pending Borrowings</h2>
+        <h2>{isGeneralAdmin ? 'Pending Borrowings' : isDepartmentAdmin ? 'Emprunts en attente - Votre département' : 'Mes demandes d\'emprunt'}</h2>
         {recentBorrowings.length === 0 ? (
           <div className="empty-state">
             <CheckCircle size={48} />
@@ -126,7 +154,7 @@ const Dashboard = () => {
                 </div>
                 <span className={`status ${borrowing.status}`}>
                   {getStatusIcon(borrowing.status)}
-                  {borrowing.status}
+                  {getStatusLabel(borrowing.status)}
                 </span>
               </div>
             ))}

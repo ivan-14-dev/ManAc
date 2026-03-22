@@ -27,13 +27,22 @@ class BorrowingCreateSerializer(serializers.ModelSerializer):
         model = Borrowing
         fields = ['equipment', 'borrower_name', 'borrower_cni', 
                   'borrower_email', 'destination_room', 'quantity',
-                  'expected_return_date', 'notes']
+                  'expected_return_date', 'notes', 'cni_photo']
         extra_kwargs = {
             'borrower_name': {'required': False},
-            'borrower_cni': {'required': False},
+            'borrower_cni': {'required': True},  # CNI is required
             'borrower_email': {'required': False},
             'destination_room': {'required': False},
+            'expected_return_date': {'required': False},
         }
+    
+    def create(self, validated_data):
+        # Set default expected return date to 7 days from now if not provided
+        from django.utils import timezone
+        from datetime import timedelta
+        if 'expected_return_date' not in validated_data or not validated_data['expected_return_date']:
+            validated_data['expected_return_date'] = timezone.now().date() + timedelta(days=7)
+        return super().create(validated_data)
 
 
 class BorrowingUpdateSerializer(serializers.ModelSerializer):

@@ -14,6 +14,21 @@ class EquipmentSerializer(serializers.ModelSerializer):
                   'purchase_date', 'created_by', 'created_by_username', 
                   'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def validate_department(self, value):
+        """Validate department assignment for department admins"""
+        request = self.context.get('request')
+        if not request or not request.user:
+            raise serializers.ValidationError("Authentication required")
+        
+        user = request.user
+        # Department admins can only assign equipment to their own department
+        if user.is_department_admin and value != user.department:
+            raise serializers.ValidationError(
+                "You can only assign equipment to your own department"
+            )
+        
+        return value
 
 
 class EquipmentListSerializer(serializers.ModelSerializer):

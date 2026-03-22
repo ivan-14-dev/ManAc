@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -45,7 +46,8 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     queryset = Borrowing.objects.all()
     serializer_class = BorrowingSerializer
     permission_classes = [IsAuthenticated, CanManageBorrowings]
-    filterset_fields = ['status', 'equipment']
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['status', 'equipment', 'borrower']
     
     def get_serializer_class(self):
         if self.action == 'create':
@@ -56,12 +58,30 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
+        queryset = Borrowing.objects.select_related('equipment', 'equipment__department', 'borrower', 'approved_by')
+        
         if user.is_general_admin:
-            return Borrowing.objects.all()
+            borrowings = queryset.all()
         elif user.is_department_admin:
-            return Borrowing.objects.filter(equipment__department=user.department)
+            borrowings = queryset.filter(equipment__department=user.department)
         else:
-            return Borrowing.objects.filter(borrower=user)
+            borrowings = queryset.filter(borrower=user)
+        
+        # Auto-check overdue: if checked_out for more than 8 hours, mark as overdue
+        from django.utils import timezone
+        from datetime import timedelta
+        now = timezone.now()
+        eight_hours_ago = now - timedelta(hours=8)
+        
+        for borrowing in borrowings:
+            if borrowing.status == 'checked_out' and borrowing.checkout_date:
+                if borrowing.checkout_date < eight_hours_ago:
+                    # Only update if not already marked as overdue
+                    if borrowing.status != 'overdue':
+                        borrowing.status = 'overdue'
+                        borrowing.save(update_fields=['status', 'updated_at'])
+        
+        return borrowings
     
     def perform_create(self, serializer):
         serializer.save(
@@ -73,6 +93,14 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         borrowing = self.get_object()
+        
+        # Check department permission for department admins
+        if request.user.is_department_admin:
+            if borrowing.equipment.department != request.user.department:
+                return Response(
+                    {'error': 'You can only approve borrowings from your department'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
         
         if borrowing.status != 'pending':
             return Response(
@@ -105,6 +133,14 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     def reject(self, request, pk=None):
         borrowing = self.get_object()
         
+        # Check department permission for department admins
+        if request.user.is_department_admin:
+            if borrowing.equipment.department != request.user.department:
+                return Response(
+                    {'error': 'You can only reject borrowings from your department'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        
         if borrowing.status != 'pending':
             return Response(
                 {'error': 'Can only reject pending borrowings'},
@@ -123,6 +159,14 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def checkout(self, request, pk=None):
         borrowing = self.get_object()
+        
+        # Check department permission for department admins
+        if request.user.is_department_admin:
+            if borrowing.equipment.department != request.user.department:
+                return Response(
+                    {'error': 'You can only checkout borrowings from your department'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
         
         if borrowing.status != 'approved':
             return Response(
@@ -147,6 +191,14 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     def return_equipment(self, request, pk=None):
         borrowing = self.get_object()
         
+        # Check department permission for department admins
+        if request.user.is_department_admin:
+            if borrowing.equipment.department != request.user.department:
+                return Response(
+                    {'error': 'You can only process returns from your department'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        
         if borrowing.status not in ['approved', 'checked_out']:
             return Response(
                 {'error': 'Can only return checked out or approved borrowings'},
@@ -169,7 +221,7 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def my_borrowings(self, request):
-        borrowings = Borrowing.objects.filter(borrower=request.user)
+        borrowings = Borrowing.objects.select_related('equipment', 'equipment__department', 'borrower', 'approved_by').filter(borrower=request.user)
         serializer = BorrowingSerializer(borrowings, many=True)
         return Response(serializer.data)
     
@@ -191,7 +243,7 @@ class BorrowingViewSet(viewsets.ModelViewSet):
                 {'error': 'Only admins can view overdue borrowings'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        overdue = self.get_queryset().filter(
+        overdue = self.get_queryset().select_related('equipment', 'equipment__department', 'borrower', 'approved_by').filter(
             status='checked_out',
             expected_return_date__lt=timezone.now().date()
         )

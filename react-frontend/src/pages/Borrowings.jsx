@@ -8,7 +8,7 @@ import './Borrowings.css';
 
 const Borrowings = () => {
   const navigate = useNavigate();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isGeneralAdmin, isDepartmentAdmin, user } = useAuth();
   const [borrowings, setBorrowings] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,21 +22,39 @@ const Borrowings = () => {
 
   useEffect(() => {
     loadData();
-  }, [filters]);
+  }, [filters, user]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       
-      const [borrowingsRes, equipmentRes] = await Promise.all([
-        borrowingsAPI.list(filters),
-        equipmentAPI.list(),
-      ]);
+      // Filter out empty values from filters
+      const filteredParams = Object.fromEntries(
+        Object.entries(filters).filter(([_, value]) => value !== '' && value !== null && value !== undefined)
+      );
+      
+      // Use my_borrowings for regular users, regular list for admins
+      let borrowingsRes;
+      if (!isAdmin) {
+        borrowingsRes = await borrowingsAPI.myBorrowings();
+      } else {
+        borrowingsRes = await borrowingsAPI.list(filteredParams);
+      }
+      
+      const equipmentRes = await equipmentAPI.list();
       
       const borrowingsData = borrowingsRes.data.results || borrowingsRes.data;
       const equipmentData = equipmentRes.data.results || equipmentRes.data;
       
-      setBorrowings(borrowingsData);
+      // Filter by department for department admin
+      let filteredBorrowings = borrowingsData;
+      if (isDepartmentAdmin && user?.department) {
+        filteredBorrowings = borrowingsData.filter(b => 
+          b.equipment_department === user.department || !b.equipment_department
+        );
+      }
+      
+      setBorrowings(filteredBorrowings);
       setEquipment(equipmentData);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -106,6 +124,7 @@ const Borrowings = () => {
       rejected: { label: 'Rejeté', class: 'rejected', icon: XCircle },
       checked_out: { label: 'Emprunté', class: 'checked-out', icon: ArrowRight },
       returned: { label: 'Retourné', class: 'returned', icon: CheckCircle },
+      overdue: { label: 'En retard', class: 'overdue', icon: Clock },
     };
     
     const config = statusConfig[status] || statusConfig.pending;
@@ -193,6 +212,7 @@ const Borrowings = () => {
           <option value="rejected">Rejeté</option>
           <option value="checked_out">Emprunté</option>
           <option value="returned">Retourné</option>
+          <option value="overdue">En retard</option>
         </select>
 
         <select name="equipment" value={filters.equipment} onChange={handleFilterChange}>
@@ -276,7 +296,7 @@ const Borrowings = () => {
               {borrowings.map(item => (
                 <tr key={item.id}>
                   <td className="id-cell">#{item.id}</td>
-                  <td>{getEquipmentName(item.equipment)}</td>
+                  <td>{item.equipment_name || getEquipmentName(item.equipment)}</td>
                   <td>
                     <div className="borrower-info">
                       <strong>{item.borrower_name}</strong>

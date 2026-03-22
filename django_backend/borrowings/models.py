@@ -8,12 +8,12 @@ import uuid
 class Borrowing(models.Model):
     """Borrowing/Emprunt model for equipment borrowing"""
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('checked_out', 'Checked Out'),
-        ('returned', 'Returned'),
-        ('overdue', 'Overdue'),
+        ('pending', 'En attente'),
+        ('approved', 'Approuvé'),
+        ('rejected', 'Rejeté'),
+        ('checked_out', 'Emprunté'),
+        ('returned', 'Retourné'),
+        ('overdue', 'En retard'),
     ]
     
     # Unique reference number for the borrowing

@@ -7,7 +7,7 @@ import './Alerts.css';
 
 const Alerts = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isDepartmentAdmin, user } = useAuth();
   const [pendingReturns, setPendingReturns] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,13 +20,16 @@ const Alerts = () => {
     try {
       setLoading(true);
       
+      // Build department filter for department admin
+      const deptFilter = isDepartmentAdmin && user?.department ? { department: user.department } : {};
+      
       // Get pending/active borrowings
-      const borrowingsRes = await borrowingsAPI.list({ status: 'checked_out' });
+      const borrowingsRes = await borrowingsAPI.list({ status: 'checked_out', ...deptFilter });
       const borrowingsData = borrowingsRes.data.results || borrowingsRes.data;
       setPendingReturns(borrowingsData);
 
-      // Get all equipment for low stock check
-      const equipmentRes = await equipmentAPI.list();
+      // Get equipment filtered by department
+      const equipmentRes = await equipmentAPI.list(deptFilter);
       const equipmentData = equipmentRes.data.results || equipmentRes.data;
       
       // Filter low stock (less than 2 available)

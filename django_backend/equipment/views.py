@@ -37,6 +37,7 @@ class CanManageEquipment:
 class EquipmentViewSet(viewsets.ModelViewSet):
     queryset = Equipment.objects.all()
     permission_classes = [IsAuthenticated, CanManageEquipment]
+    filter_backends = [DjangoFilterBackend]
     filterset_fields = ['category', 'status', 'department']
     search_fields = ['name', 'serial_number', 'barcode']
     
@@ -48,11 +49,11 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.is_general_admin:
-            return Equipment.objects.all()
+            return Equipment.objects.select_related('department', 'created_by').all()
         elif user.is_department_admin:
-            return Equipment.objects.filter(department=user.department)
+            return Equipment.objects.select_related('department', 'created_by').filter(department=user.department)
         else:
-            return Equipment.objects.filter(status='available')
+            return Equipment.objects.select_related('department', 'created_by').filter(status='available')
     
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)

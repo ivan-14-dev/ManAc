@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { equipmentAPI, borrowingsAPI } from '../api';
-import { ShoppingCart, User, School, Badge, History, Plus, Package, Check, Trash2 } from 'lucide-react';
+import { ShoppingCart, User, School, Badge, History, Plus, Package, Check, Trash2, Camera, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import './EquipmentCheckout.css';
 
@@ -24,6 +24,9 @@ const EquipmentCheckout = () => {
     destination_room: '',
     notes: '',
   });
+
+  const [cniPhoto, setCniPhoto] = useState(null);
+  const [cniPreview, setCniPreview] = useState(null);
 
   useEffect(() => {
     loadEquipment();
@@ -47,6 +50,23 @@ const EquipmentCheckout = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleCniPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCniPhoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCniPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeCniPhoto = () => {
+    setCniPhoto(null);
+    setCniPreview(null);
   };
 
   const handleTypeSelect = (type) => {
@@ -107,6 +127,11 @@ const EquipmentCheckout = () => {
       return;
     }
 
+    if (!cniPhoto) {
+      toast.warn('Veuillez télécharger une photo de votre CNI');
+      return;
+    }
+
     if (Object.keys(formData.quantity_by_equipment).length === 0) {
       toast.warn('Veuillez sélectionner au moins un équipement');
       return;
@@ -119,16 +144,17 @@ const EquipmentCheckout = () => {
       for (const item of selectedEquipment) {
         const quantity = formData.quantity_by_equipment[item.id] || 1;
         
-        await borrowingsAPI.create({
-          equipment: item.id,
-          borrower_name: formData.borrower_name,
-          borrower_cni: formData.borrower_cni,
-          borrower_email: formData.borrower_email,
-          quantity: quantity,
-          destination_room: formData.destination_room,
-          notes: formData.notes,
-          borrower_type: checkoutType,
-        });
+        const data = new FormData();
+        data.append('equipment', item.id);
+        data.append('borrower_name', formData.borrower_name);
+        data.append('borrower_cni', formData.borrower_cni);
+        data.append('borrower_email', formData.borrower_email);
+        data.append('quantity', quantity);
+        data.append('destination_room', formData.destination_room);
+        data.append('notes', formData.notes);
+        data.append('cni_photo', cniPhoto);
+        
+        await borrowingsAPI.create(data);
       }
 
       toast.success(`${selectedEquipment.length} emprunt(s) créé(s) avec succès!`);
@@ -142,6 +168,8 @@ const EquipmentCheckout = () => {
         destination_room: '',
         notes: '',
       });
+      setCniPhoto(null);
+      setCniPreview(null);
       setSelectedEquipment([]);
       setCheckoutType(null);
       setStep('select-type');
@@ -166,6 +194,8 @@ const EquipmentCheckout = () => {
       destination_room: '',
       notes: '',
     });
+    setCniPhoto(null);
+    setCniPreview(null);
   };
 
   const totalItems = Object.values(formData.quantity_by_equipment).reduce((a, b) => a + b, 0);
@@ -346,6 +376,43 @@ const EquipmentCheckout = () => {
                   placeholder="email@exemple.com"
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="cni-photo-input">Photo CNI * (Requis - Format image)</label>
+              {!cniPreview && (
+                <div 
+                  className="cni-upload"
+                  onClick={() => document.getElementById('cni-photo-input').click()}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="cni-upload-label">
+                    <Camera size={32} />
+                    <span>Cliquez pour télécharger la photo de la CNI</span>
+                    <span style={{fontSize: '12px', color: '#999'}}>PNG, JPG - Max 5MB</span>
+                  </div>
+                </div>
+              )}
+              <input
+                id="cni-photo-input"
+                type="file"
+                accept="image/*"
+                onChange={handleCniPhotoChange}
+                style={{ display: cniPreview ? 'none' : 'block', marginTop: '10px', width: '100%' }}
+              />
+              {cniPreview && (
+                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px'}}>
+                  <img src={cniPreview} alt="CNI" className="cni-preview" />
+                  <button 
+                    type="button" 
+                    className="cni-remove"
+                    onClick={removeCniPhoto}
+                    style={{ marginTop: '10px' }}
+                  >
+                    <X size={14} /> Supprimer
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="form-group">
