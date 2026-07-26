@@ -7,7 +7,10 @@ import os
 
 from rest_framework.routers import DefaultRouter
 from accounts.views import UserViewSet
-from accounts.auth_views import login_view, logout_view, current_user_view
+from accounts.auth_views import (
+    login_view, logout_view, current_user_view,
+    forgot_password_view, verify_reset_code_view, reset_password_view,
+)
 from departments.views import DepartmentViewSet
 from equipment.views import EquipmentViewSet
 from borrowings.views import BorrowingViewSet
@@ -96,6 +99,9 @@ urlpatterns = [
     path('api/auth/login/', login_view, name='login'),
     path('api/auth/logout/', logout_view, name='logout'),
     path('api/auth/me/', current_user_view, name='current_user'),
+    path('api/auth/forgot-password/', forgot_password_view, name='forgot_password'),
+    path('api/auth/verify-reset-code/', verify_reset_code_view, name='verify_reset_code'),
+    path('api/auth/reset-password/', reset_password_view, name='reset_password'),
     path('api/', include(router.urls)),
     path('api-auth/', include('rest_framework.urls')),
     path('admin/', admin.site.urls),

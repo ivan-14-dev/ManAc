@@ -100,8 +100,9 @@ class Borrowing(models.Model):
             
             if last_borrowing:
                 # Extract the counter and increment
+                # Format: EMP-YYYYMMDDHHINIT-NN  (last segment after final '-')
                 try:
-                    last_num = int(last_borrowing.reference_number.split('-')[-1])
+                    last_num = int(last_borrowing.reference_number.rsplit('-', 1)[-1])
                     new_num = last_num + 1
                 except (ValueError, IndexError):
                     new_num = 1

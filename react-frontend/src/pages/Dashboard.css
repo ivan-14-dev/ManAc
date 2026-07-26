@@ -181,3 +181,172 @@
   font-size: 1.125rem;
   color: #667781;
 }
+
+/* Section header with actions */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.section-header h2 {
+  color: #212121;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-subtitle {
+  color: #667781;
+  font-size: 0.875rem;
+  margin: 0 0 1.25rem;
+}
+
+.btn-icon {
+  background: none;
+  border: 1px solid #E8E8E8;
+  border-radius: 8px;
+  padding: 0.4rem;
+  cursor: pointer;
+  color: #667781;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #F7F8FA;
+  color: #00A884;
+}
+
+.btn-primary-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: linear-gradient(135deg, #00A884 0%, #00897B 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-primary-sm:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* My borrowings cards (regular user) */
+.my-borrowings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.my-borrowing-card {
+  display: flex;
+  background: #F7F8FA;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.my-borrowing-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.card-status-bar {
+  width: 5px;
+  flex-shrink: 0;
+  background: #E8E8E8;
+}
+
+.my-borrowing-card.status-pending .card-status-bar { background: #FFC107; }
+.my-borrowing-card.status-approved .card-status-bar { background: #00A884; }
+.my-borrowing-card.status-rejected .card-status-bar { background: #EF5350; }
+.my-borrowing-card.status-checked-out .card-status-bar { background: #1976D2; }
+.my-borrowing-card.status-returned .card-status-bar { background: #25D366; }
+.my-borrowing-card.status-overdue .card-status-bar { background: #FF5722; }
+
+.card-body {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  gap: 1rem;
+}
+
+.card-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-equipment {
+  font-weight: 600;
+  color: #212121;
+  font-size: 0.95rem;
+  margin-bottom: 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-meta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  color: #667781;
+  font-size: 0.75rem;
+  margin-bottom: 0.2rem;
+}
+
+.card-return {
+  color: #667781;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.card-reason {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #EF5350;
+  font-size: 0.75rem;
+  margin-top: 0.3rem;
+}
+
+.card-right {
+  flex-shrink: 0;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge.pending    { background: #FFF8E1; color: #F57C00; }
+.status-badge.approved   { background: #E8F5E9; color: #00A884; }
+.status-badge.rejected   { background: #FFEBEE; color: #EF5350; }
+.status-badge.checked-out{ background: #E3F2FD; color: #1976D2; }
+.status-badge.returned   { background: #E8F5E9; color: #2E7D32; }
+.status-badge.overdue    { background: #FBE9E7; color: #FF5722; }
