@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { OfflineBanner } from '../hooks/useOnlineStatus';
 import { 
   LayoutDashboard, 
   Package, 
@@ -12,37 +14,55 @@ import {
   LogOut,
   Bell,
   ShoppingCart,
-  PlusCircle
+  PlusCircle,
+  Globe,
 } from 'lucide-react';
 import './Layout.css';
 
+const LANGUAGES = [
+  { code: 'fr', label: 'FR' },
+  { code: 'en', label: 'EN' },
+];
+
 const Layout = ({ children }) => {
   const { user, logout, isAdmin, isGeneralAdmin } = useAuth();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem('manac_language', lng);
+  };
+
   const menuItems = [
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/equipment', icon: Package, label: 'Équipements' },
-    { path: '/checkout', icon: ShoppingCart, label: 'Emprunter' },
-    { path: '/borrowings', icon: ArrowLeftRight, label: 'Emprunts' },
-    { path: '/alerts', icon: Bell, label: 'Alertes' },
+    { path: '/', icon: LayoutDashboard, label: t('dashboard') },
+    { path: '/equipment', icon: Package, label: t('equipment') },
+    { path: '/checkout', icon: ShoppingCart, label: t('newBorrowing') },
+    { path: '/borrowings', icon: ArrowLeftRight, label: t('borrowings') },
+    { path: '/alerts', icon: Bell, label: t('alerts') },
   ];
 
-  // Admin-only menu items
   const adminItems = [];
   if (isAdmin) {
-    adminItems.push({ path: '/equipment/add', icon: PlusCircle, label: 'Ajouter Équip.' });
+    adminItems.push({ path: '/equipment/add', icon: PlusCircle, label: t('addEquipment') });
   }
   if (isGeneralAdmin) {
-    adminItems.push({ path: '/departments', icon: Building2, label: 'Départements' });
+    adminItems.push({ path: '/departments', icon: Building2, label: t('departments') });
   }
   if (isAdmin) {
-    adminItems.push({ path: '/users', icon: Users, label: 'Utilisateurs' });
+    adminItems.push({ path: '/users', icon: Users, label: t('users') });
   }
+
+  const roleLabel = user?.role === 'general_admin' ? 'Admin Général'
+    : user?.role === 'department_admin' ? 'Admin Dépt.'
+    : 'Utilisateur';
 
   return (
     <div className="app-container">
+      {/* Offline banner */}
+      <OfflineBanner />
+
       {/* Sidebar - Desktop */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
@@ -79,21 +99,33 @@ const Layout = ({ children }) => {
         </nav>
 
         <div className="sidebar-footer">
+          {/* Language switcher in sidebar */}
+          <div className="lang-row">
+            <Globe size={14} />
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                className={`lang-pill${i18n.language === lang.code ? ' active' : ''}`}
+                onClick={() => changeLanguage(lang.code)}
+                type="button"
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+
           <div className="user-info">
             <div className="user-avatar">
               {user?.first_name?.[0] || user?.username?.[0] || 'U'}
             </div>
             <div className="user-details">
               <span className="user-name">{user?.first_name || user?.username}</span>
-              <span className="user-role">
-                {user?.role === 'general_admin' ? 'Admin Général' : 
-                 user?.role === 'department_admin' ? 'Admin Dépt.' : 'Utilisateur'}
-              </span>
+              <span className="user-role">{roleLabel}</span>
             </div>
           </div>
           <button className="logout-btn" onClick={logout}>
             <LogOut size={18} />
-            <span>Déconnexion</span>
+            <span>{t('logout')}</span>
           </button>
         </div>
       </aside>
@@ -105,9 +137,9 @@ const Layout = ({ children }) => {
             <Menu size={24} />
           </button>
           <div className="page-title">
-            {menuItems.find(item => item.path === location.pathname)?.label || 
-             adminItems.find(item => item.path === location.pathname)?.label || 
-             'Dashboard'}
+            {menuItems.find(item => item.path === location.pathname)?.label ||
+             adminItems.find(item => item.path === location.pathname)?.label ||
+             t('dashboard')}
           </div>
           <div className="top-bar-actions">
             <span className="user-badge">

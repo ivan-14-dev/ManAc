@@ -1,18 +1,27 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { equipmentAPI, borrowingsAPI, departmentsAPI } from '../api';
-import { Package, ArrowLeftRight, Building2, CheckCircle, Clock, XCircle } from 'lucide-react';
+import {
+  Package, ArrowLeftRight, Building2, CheckCircle, Clock, XCircle,
+  ArrowRight, AlertTriangle, Plus, RefreshCw
+} from 'lucide-react';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user, isGeneralAdmin, isDepartmentAdmin } = useAuth();
+  const { user, isGeneralAdmin, isDepartmentAdmin, isAdmin } = useAuth();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalEquipment: 0,
     availableEquipment: 0,
     pendingBorrowings: 0,
     totalDepartments: 0,
+    myBorrowingsCount: 0,
   });
   const [recentBorrowings, setRecentBorrowings] = useState([]);
+  const [myBorrowings, setMyBorrowings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,41 +30,48 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Build filters based on user role
-      const equipmentParams = {};
-      const borrowingsParams = {};
-      
-      if (isDepartmentAdmin && user?.department) {
-        equipmentParams.department = user.department;
-        borrowingsParams.department = user.department;
+      setLoading(true);
+
+      const promises = [
+        equipmentAPI.list(),
+        isAdmin
+          ? borrowingsAPI.list({ status: 'pending' })
+          : borrowingsAPI.myBorrowings(),
+      ];
+
+      if (isGeneralAdmin) {
+        promises.push(departmentsAPI.list());
       }
-      
-      const [equipmentRes, borrowingsRes, departmentsRes] = await Promise.all([
-        equipmentAPI.list(equipmentParams),
-        borrowingsAPI.list({ ...borrowingsParams, status: 'pending' }),
-        departmentsAPI.list(),
-      ]);
 
-      const equipment = equipmentRes.data.results || equipmentRes.data;
-      const borrowings = borrowingsRes.data.results || borrowingsRes.data;
+      const results = await Promise.all(promises);
+      const equipment = results[0].data.results || results[0].data;
+      const borrowingsData = results[1].data.results || results[1].data;
+      const departments = isGeneralAdmin ? (results[2]?.data || []) : [];
 
-      // Filter borrowings by department for department admin
-      let filteredBorrowings = borrowings;
+      let filteredPending = borrowingsData;
       if (isDepartmentAdmin && user?.department) {
-        filteredBorrowings = borrowings.filter(b => 
-          b.equipment_department === user.department || 
-          !b.equipment_department
+        filteredPending = borrowingsData.filter(
+          (b) => b.equipment_department === user.department || !b.equipment_department
         );
       }
 
       setStats({
         totalEquipment: equipment.length,
-        availableEquipment: equipment.filter(e => e.status === 'available').length,
-        pendingBorrowings: filteredBorrowings.length,
-        totalDepartments: isGeneralAdmin ? departmentsRes.data.length : 1,
+        availableEquipment: equipment.filter((e) => e.status === 'available').length,
+        pendingBorrowings: isAdmin ? filteredPending.length : 0,
+        totalDepartments: isGeneralAdmin ? departments.length : 1,
+        myBorrowingsCount: !isAdmin ? borrowingsData.length : 0,
       });
 
-      setRecentBorrowings(filteredBorrowings.slice(0, 5));
+      if (isAdmin) {
+        setRecentBorrowings(filteredPending.slice(0, 5));
+      } else {
+        // For regular users: show all their borrowings sorted by date
+        const sorted = [...borrowingsData].sort(
+          (a, b) => new Date(b.request_date || b.created_at) - new Date(a.request_date || a.created_at)
+        );
+        setMyBorrowings(sorted.slice(0, 8));
+      }
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
@@ -63,107 +79,187 @@ const Dashboard = () => {
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending': return <Clock size={16} />;
-      case 'approved': return <CheckCircle size={16} />;
-      case 'rejected': return <XCircle size={16} />;
-      case 'checked_out': return <ArrowRight size={16} />;
-      case 'returned': return <CheckCircle size={16} />;
-      default: return <Clock size={16} />;
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    const statusLabels = {
-      pending: 'En attente',
-      approved: 'Approuvé',
-      rejected: 'Rejeté',
-      checked_out: 'Emprunté',
-      returned: 'Retourné',
+  const getStatusConfig = (status) => {
+    const configs = {
+      pending:    { label: t('statusPending'),    cls: 'pending',    icon: Clock },
+      approved:   { label: t('statusApproved'),   cls: 'approved',   icon: CheckCircle },
+      rejected:   { label: t('statusRejected'),   cls: 'rejected',   icon: XCircle },
+      checked_out:{ label: t('statusCheckedOut'), cls: 'checked-out',icon: ArrowRight },
+      returned:   { label: t('statusReturned'),   cls: 'returned',   icon: CheckCircle },
+      overdue:    { label: t('statusOverdue'),    cls: 'overdue',    icon: AlertTriangle },
     };
-    return statusLabels[status] || status;
+    return configs[status] || configs.pending;
   };
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return <div className="loading">{t('loading')}</div>;
   }
 
   return (
     <div className="dashboard">
       <div className="welcome-section">
-        <h1>Welcome back, {user?.first_name || user?.username}! 👋</h1>
-        <p>Here's what's happening with your campus equipment today.</p>
+        <h1>{t('welcomeBack', { name: user?.first_name || user?.username })}</h1>
+        <p>{t('dashboardSubtitle')}</p>
       </div>
 
+      {/* Stats grid */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon blue">
-            <Package size={24} />
-          </div>
+          <div className="stat-icon blue"><Package size={24} /></div>
           <div className="stat-content">
-            <h3>Total Equipment</h3>
+            <h3>{t('totalEquipment')}</h3>
             <p className="stat-number">{stats.totalEquipment}</p>
           </div>
         </div>
-        
+
         <div className="stat-card">
-          <div className="stat-icon green">
-            <CheckCircle size={24} />
-          </div>
+          <div className="stat-icon green"><CheckCircle size={24} /></div>
           <div className="stat-content">
-            <h3>Available</h3>
+            <h3>{t('available')}</h3>
             <p className="stat-number">{stats.availableEquipment}</p>
           </div>
         </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon orange">
-            <Clock size={24} />
+
+        {isAdmin && (
+          <div className="stat-card">
+            <div className="stat-icon orange"><Clock size={24} /></div>
+            <div className="stat-content">
+              <h3>{t('pending')}</h3>
+              <p className="stat-number">{stats.pendingBorrowings}</p>
+            </div>
           </div>
-          <div className="stat-content">
-            <h3>Pending</h3>
-            <p className="stat-number">{stats.pendingBorrowings}</p>
+        )}
+
+        {!isAdmin && (
+          <div className="stat-card">
+            <div className="stat-icon orange"><ArrowLeftRight size={24} /></div>
+            <div className="stat-content">
+              <h3>{t('myBorrowings')}</h3>
+              <p className="stat-number">{stats.myBorrowingsCount}</p>
+            </div>
           </div>
-        </div>
-        
+        )}
+
         {isGeneralAdmin && (
           <div className="stat-card">
-            <div className="stat-icon purple">
-              <Building2 size={24} />
-            </div>
+            <div className="stat-icon purple"><Building2 size={24} /></div>
             <div className="stat-content">
-              <h3>Departments</h3>
+              <h3>{t('departments')}</h3>
               <p className="stat-number">{stats.totalDepartments}</p>
             </div>
           </div>
         )}
       </div>
 
-      <div className="recent-section">
-        <h2>{isGeneralAdmin ? 'Pending Borrowings' : isDepartmentAdmin ? 'Emprunts en attente - Votre département' : 'Mes demandes d\'emprunt'}</h2>
-        {recentBorrowings.length === 0 ? (
-          <div className="empty-state">
-            <CheckCircle size={48} />
-            <p>No pending borrowings! All caught up.</p>
+      {/* Admin: pending borrowings */}
+      {isAdmin && (
+        <div className="recent-section">
+          <div className="section-header">
+            <h2>{t('pendingBorrowings')}</h2>
+            <div className="section-actions">
+              <button className="btn-icon" onClick={loadDashboardData} title="Refresh">
+                <RefreshCw size={16} />
+              </button>
+              <button className="btn-primary-sm" onClick={() => navigate('/borrowings')}>
+                {t('borrowingsTitle')} →
+              </button>
+            </div>
           </div>
-        ) : (
-          <div className="borrowings-list">
-            {recentBorrowings.map(borrowing => (
-              <div key={borrowing.id} className="borrowing-item">
-                <div className="borrowing-info">
-                  <h4>{borrowing.equipment_name}</h4>
-                  <p>{borrowing.borrower_name} • {borrowing.quantity} item(s)</p>
-                </div>
-                <span className={`status ${borrowing.status}`}>
-                  {getStatusIcon(borrowing.status)}
-                  {getStatusLabel(borrowing.status)}
-                </span>
-              </div>
-            ))}
+          {recentBorrowings.length === 0 ? (
+            <div className="empty-state">
+              <CheckCircle size={48} />
+              <p>{t('noPendingBorrowings')}</p>
+            </div>
+          ) : (
+            <div className="borrowings-list">
+              {recentBorrowings.map((borrowing) => {
+                const cfg = getStatusConfig(borrowing.status);
+                const Icon = cfg.icon;
+                return (
+                  <div key={borrowing.id} className="borrowing-item">
+                    <div className="borrowing-info">
+                      <h4>{borrowing.equipment_name}</h4>
+                      <p>{borrowing.borrower_name} • {borrowing.quantity} item(s)</p>
+                    </div>
+                    <span className={`status ${cfg.cls}`}>
+                      <Icon size={16} />
+                      {cfg.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Regular user: my borrowings */}
+      {!isAdmin && (
+        <div className="recent-section">
+          <div className="section-header">
+            <h2>{t('myBorrowings')}</h2>
+            <div className="section-actions">
+              <button className="btn-icon" onClick={loadDashboardData} title="Refresh">
+                <RefreshCw size={16} />
+              </button>
+              <button className="btn-primary-sm" onClick={() => navigate('/checkout')}>
+                <Plus size={14} /> {t('newBorrowing')}
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+          <p className="section-subtitle">{t('myBorrowingsSubtitle')}</p>
+          {myBorrowings.length === 0 ? (
+            <div className="empty-state">
+              <Package size={48} />
+              <p>{t('noBorrowings')}</p>
+              <button className="btn-primary-sm" onClick={() => navigate('/checkout')}>
+                {t('newBorrowing')}
+              </button>
+            </div>
+          ) : (
+            <div className="my-borrowings-list">
+              {myBorrowings.map((borrowing) => {
+                const cfg = getStatusConfig(borrowing.status);
+                const Icon = cfg.icon;
+                const reqDate = borrowing.request_date
+                  ? new Date(borrowing.request_date).toLocaleDateString('fr-FR')
+                  : '-';
+                return (
+                  <div key={borrowing.id} className={`my-borrowing-card status-${cfg.cls}`}>
+                    <div className="card-status-bar" />
+                    <div className="card-body">
+                      <div className="card-left">
+                        <div className="card-equipment">{borrowing.equipment_name}</div>
+                        <div className="card-meta">
+                          <span>#{borrowing.reference_number || borrowing.id}</span>
+                          <span>{borrowing.quantity} unité(s)</span>
+                          <span>{reqDate}</span>
+                        </div>
+                        {borrowing.expected_return_date && (
+                          <div className="card-return">
+                            Retour prévu : {new Date(borrowing.expected_return_date).toLocaleDateString('fr-FR')}
+                          </div>
+                        )}
+                        {borrowing.status === 'rejected' && borrowing.notes && (
+                          <div className="card-reason">
+                            <XCircle size={12} /> {borrowing.notes}
+                          </div>
+                        )}
+                      </div>
+                      <div className="card-right">
+                        <span className={`status-badge ${cfg.cls}`}>
+                          <Icon size={14} />
+                          {cfg.label}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

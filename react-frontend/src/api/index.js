@@ -37,6 +37,9 @@ export const authAPI = {
   login: (credentials) => api.post('/api/auth/login/', credentials),
   logout: () => api.post('/api/auth/logout/'),
   me: () => api.get('/api/auth/me/'),
+  forgotPassword: (data) => api.post('/api/auth/forgot-password/', data),
+  verifyResetCode: (data) => api.post('/api/auth/verify-reset-code/', data),
+  resetPassword: (data) => api.post('/api/auth/reset-password/', data),
 };
 
 // Departments API

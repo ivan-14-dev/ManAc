@@ -1,5 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
+import random
+import string
 
 
 class User(AbstractUser):
@@ -47,3 +50,39 @@ class User(AbstractUser):
         if self.is_department_admin and self.department == department:
             return True
         return False
+
+
+class PasswordResetCode(models.Model):
+    """6-digit password reset code sent by email"""
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reset_codes'
+    )
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = ''.join(random.choices(string.digits, k=6))
+        if not self.expires_at:
+            from django.conf import settings
+            minutes = getattr(settings, 'PASSWORD_RESET_CODE_EXPIRY_MINUTES', 15)
+            self.expires_at = timezone.now() + timezone.timedelta(minutes=minutes)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self):
+        return not self.used and not self.is_expired
+
+    def __str__(self):
+        return f"Reset code for {self.user.username} ({self.code})"
