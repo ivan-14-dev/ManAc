@@ -54,9 +54,9 @@ const Layout = ({ children }) => {
     adminItems.push({ path: '/users', icon: Users, label: t('users') });
   }
 
-  const roleLabel = user?.role === 'general_admin' ? 'Admin Général'
-    : user?.role === 'department_admin' ? 'Admin Dépt.'
-    : 'Utilisateur';
+  const roleLabel = user?.role === 'general_admin' ? t('roleGeneralAdmin')
+    : user?.role === 'department_admin' ? t('roleDepartmentAdmin')
+    : t('roleUser');
 
   return (
     <div className="app-container">

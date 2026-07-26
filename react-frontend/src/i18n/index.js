@@ -104,6 +104,15 @@ const resources = {
       success: 'Succès',
       loading: 'Chargement...',
 
+      // Extra i18n keys
+      expectedReturn: 'Retour prévu :',
+      units: '{{count}} unité(s)',
+      resendCode: 'Renvoyer le code',
+      codeFormatError: 'Le code doit contenir exactement 6 chiffres.',
+      roleGeneralAdmin: 'Admin Général',
+      roleDepartmentAdmin: 'Admin Dépt.',
+      roleUser: 'Utilisateur',
+
       // Offline
       offlineMode: 'Mode hors ligne',
       offlineMessage: 'Vous êtes hors ligne. Les modifications seront synchronisées à la reconnexion.',
@@ -212,6 +221,15 @@ const resources = {
       error: 'Error',
       success: 'Success',
       loading: 'Loading...',
+
+      // Extra i18n keys
+      expectedReturn: 'Expected return:',
+      units: '{{count}} unit(s)',
+      resendCode: 'Resend code',
+      codeFormatError: 'The code must be exactly 6 digits.',
+      roleGeneralAdmin: 'General Admin',
+      roleDepartmentAdmin: 'Dept. Admin',
+      roleUser: 'User',
 
       // Offline
       offlineMode: 'Offline Mode',

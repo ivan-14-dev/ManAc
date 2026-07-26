@@ -11,7 +11,7 @@ import './Dashboard.css';
 
 const Dashboard = () => {
   const { user, isGeneralAdmin, isDepartmentAdmin, isAdmin } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalEquipment: 0,
@@ -222,7 +222,7 @@ const Dashboard = () => {
                 const cfg = getStatusConfig(borrowing.status);
                 const Icon = cfg.icon;
                 const reqDate = borrowing.request_date
-                  ? new Date(borrowing.request_date).toLocaleDateString('fr-FR')
+                  ? new Date(borrowing.request_date).toLocaleDateString(i18n.language)
                   : '-';
                 return (
                   <div key={borrowing.id} className={`my-borrowing-card status-${cfg.cls}`}>
@@ -232,12 +232,12 @@ const Dashboard = () => {
                         <div className="card-equipment">{borrowing.equipment_name}</div>
                         <div className="card-meta">
                           <span>#{borrowing.reference_number || borrowing.id}</span>
-                          <span>{borrowing.quantity} unité(s)</span>
+                          <span>{t('units', { count: borrowing.quantity })}</span>
                           <span>{reqDate}</span>
                         </div>
                         {borrowing.expected_return_date && (
                           <div className="card-return">
-                            Retour prévu : {new Date(borrowing.expected_return_date).toLocaleDateString('fr-FR')}
+                            {t('expectedReturn')} {new Date(borrowing.expected_return_date).toLocaleDateString(i18n.language)}
                           </div>
                         )}
                         {borrowing.status === 'rejected' && borrowing.notes && (

@@ -52,7 +52,7 @@ const ForgotPassword = () => {
     setError('');
     setInfo('');
     if (code.length !== 6 || !/^\d{6}$/.test(code)) {
-      setError('Le code doit contenir exactement 6 chiffres.');
+      setError(t('codeFormatError'));
       return;
     }
     setLoading(true);
@@ -187,7 +187,7 @@ const ForgotPassword = () => {
               className="resend-btn"
               onClick={() => { setStep(1); setCode(''); setError(''); setInfo(''); }}
             >
-              Renvoyer le code
+              {t('resendCode')}
             </button>
           </form>
         )}
